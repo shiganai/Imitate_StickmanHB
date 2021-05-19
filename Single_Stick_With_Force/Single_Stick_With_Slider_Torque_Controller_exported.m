@@ -19,6 +19,8 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         theta_0 double
         dtheta_0 double
         Mtheta double
+        quivers matlab.graphics.chart.primitive.Quiver
+        quiver_Ratio double
     end
     
     methods (Access = private)
@@ -27,13 +29,28 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.theta_0 = 0/2 * pi;
         end
         
-        function refresh_Anime_Axes(app)
+        function refresh_Stick(app)
             x = app.Lc * cos(app.theta_0 + 3/2 * pi);
             y = app.Lc * sin(app.theta_0 + 3/2 * pi);
             
             app.stick.XData(2) = x;
             app.stick.YData(2) = y;
+        end
+        
+        function refresh_Quivers(app)
+            Fx_out = find_Fx_out(app.Lc,app.M,app.Mtheta,app.dtheta_0,app.g,app.theta_0);
+            Fy_out = find_Fy_out(app.Lc,app.M,app.Mtheta,app.dtheta_0,app.g,app.theta_0);
+            Fx_out_G = find_Fx_out(app.Lc,app.M,0,app.dtheta_0,app.g,app.theta_0);
+            Fy_out_G = find_Fy_out(app.Lc,app.M,0,app.dtheta_0,app.g,app.theta_0);
+            Fx_out_Torque = Fx_out - Fx_out_G;
+            Fy_out_Torque = Fy_out - Fy_out_G;
             
+            app.quivers(1).UData = Fx_out / app.quiver_Ratio;
+            app.quivers(1).VData = Fy_out / app.quiver_Ratio;
+            app.quivers(2).UData = Fx_out_G / app.quiver_Ratio;
+            app.quivers(2).VData = Fy_out_G / app.quiver_Ratio;
+            app.quivers(3).UData = Fx_out_Torque / app.quiver_Ratio;
+            app.quivers(3).VData = Fy_out_Torque / app.quiver_Ratio;
         end
     end
     
@@ -45,15 +62,29 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         function startupFcn(app)
             app.Lc = 1;
             app.M = 1;
-            app.g = 9.8;
+            app.g = 0;
             app.time_step = 0.05;
             app.dtheta_0 = 0;
             app.theta_0 = 0/2 * pi;
             app.Mtheta = 0;
+            app.quiver_Ratio = 2;
             
             app.stick = plot(app.UIAxes, [0, app.Lc * cos(app.theta_0 + 3/2 * pi)], [0, app.Lc * sin(app.theta_0 + 3/2 * pi)], '-', 'LineWidth', 2);
             xlim(app.UIAxes, [-app.Lc, app.Lc])
             ylim(app.UIAxes, [-app.Lc, app.Lc])
+            
+            Fx_out = find_Fx_out(app.Lc,app.M,app.Mtheta,app.dtheta_0,app.g,app.theta_0);
+            Fy_out = find_Fy_out(app.Lc,app.M,app.Mtheta,app.dtheta_0,app.g,app.theta_0);
+            Fx_out_G = find_Fx_out(app.Lc,app.M,0,app.dtheta_0,app.g,app.theta_0);
+            Fy_out_G = find_Fy_out(app.Lc,app.M,0,app.dtheta_0,app.g,app.theta_0);
+            Fx_out_Torque = Fx_out - Fx_out_G;
+            Fy_out_Torque = Fy_out - Fy_out_G;
+            
+            hold(app.UIAxes, "on")
+            app.quivers(1,1) = quiver(app.UIAxes, 0, 0, Fx_out / app.quiver_Ratio, Fy_out / app.quiver_Ratio);
+            app.quivers(2,1) = quiver(app.UIAxes, 0, 0, Fx_out_G / app.quiver_Ratio, Fy_out_G / app.quiver_Ratio);
+            app.quivers(3,1) = quiver(app.UIAxes, 0, 0, Fx_out_Torque / app.quiver_Ratio, Fy_out_Torque / app.quiver_Ratio);
+            hold(app.UIAxes, "off")
         end
 
         % Value changed function: PlayingButton
@@ -70,9 +101,10 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                     app.theta_0 = q(end,1);
                     app.dtheta_0 = q(end,2);
                     
-                    refresh_Anime_Axes(app)
+                    refresh_Stick(app)
+                    refresh_Quivers(app)
                     
-                    pause(app.time_step)
+%                     pause(app.time_step/1.2)
                     drawnow
                     
                     if ~app.PlayingButton.Value
@@ -87,6 +119,8 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         function SliderValueChanging(app, event)
             changingValue = event.Value;
             app.Mtheta = changingValue;
+            refresh_Quivers(app)
+            drawnow
         end
 
         % Value changed function: ResetButton
@@ -101,7 +135,8 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                 
                 initialize_Data(app)
                 
-                refresh_Anime_Axes(app)
+                refresh_Stick(app)
+                refresh_Quivers(app)
                 drawnow
             end
         end
@@ -126,9 +161,9 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create Slider
             app.Slider = uislider(app.UIFigure);
-            app.Slider.Limits = [-10 10];
+            app.Slider.Limits = [-1 1];
             app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
-            app.Slider.Position = [35 50 573 3];
+            app.Slider.Position = [186 51 311 3];
 
             % Create ResetButton
             app.ResetButton = uibutton(app.UIFigure, 'state');
