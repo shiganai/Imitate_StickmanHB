@@ -22,17 +22,19 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     end
     
     methods (Access = private)
+        function initialize_Data(app)
+            app.dtheta_0 = 0;
+            app.theta_0 = 0/2 * pi;
+        end
         
-        %         function dotq = ddt(app, t, q, Lc, M, g)
-        %             theta = q(1);
-        %             dtheta = q(2);
-        %
-        %             Mtheta = 0;
-        %
-        %             ddtheta = find_ddtheta(Lc,M,Mtheta,g,theta);
-        %
-        %             dotq = [dtheta, ddtheta]';
-        %         end
+        function refresh_Anime_Axes(app)
+            x = app.Lc * cos(app.theta_0 + 3/2 * pi);
+            y = app.Lc * sin(app.theta_0 + 3/2 * pi);
+            
+            app.stick.XData(2) = x;
+            app.stick.YData(2) = y;
+            
+        end
     end
     
 
@@ -47,7 +49,7 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.time_step = 0.05;
             app.dtheta_0 = 0;
             app.theta_0 = 0/2 * pi;
-            %             app.theta_0 = 1/2 * pi;
+            app.Mtheta = 0;
             
             app.stick = plot(app.UIAxes, [0, app.Lc * cos(app.theta_0 + 3/2 * pi)], [0, app.Lc * sin(app.theta_0 + 3/2 * pi)], '-', 'LineWidth', 2);
             xlim(app.UIAxes, [-app.Lc, app.Lc])
@@ -65,40 +67,15 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                     
                     [~, q] = ode45(@(t,q) ddt(t, q,app.Lc, app.M, app.g, app.Mtheta), t, q0);
                     
-                    theta = q(:,1);
-                    dtheta = q(:,2);
+                    app.theta_0 = q(end,1);
+                    app.dtheta_0 = q(end,2);
                     
-                    x = app.Lc * cos(theta + 3/2 * pi);
-                    y = app.Lc * sin(theta + 3/2 * pi);
+                    refresh_Anime_Axes(app)
                     
-                    app.stick.XData(2) = x(end);
-                    app.stick.YData(2) = y(end);
-                    
+                    pause(app.time_step)
                     drawnow
                     
-                    app.theta_0 = theta(end);
-                    app.dtheta_0 = dtheta(end);
-                    
                     if ~app.PlayingButton.Value
-                        break
-                    end
-                    
-                    if app.ResetButton.Value
-                        dtheta = 0;
-                        theta = 0/2 * pi;
-                        
-                        x = app.Lc * cos(theta + 3/2 * pi);
-                        y = app.Lc * sin(theta + 3/2 * pi);
-                        
-                        app.stick.XData(2) = x(end);
-                        app.stick.YData(2) = y(end);
-                        
-                        drawnow
-                        
-                        app.theta_0 = theta(end);
-                        app.dtheta_0 = dtheta(end);
-                        
-                        app.PlayingButton.Value = false;
                         app.ResetButton.Value = false;
                         break
                     end
@@ -116,7 +93,16 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         function ResetButtonValueChanged(app, event)
             value = app.ResetButton.Value;
             if value
-                app.PlayingButton.Value = false;
+                if app.PlayingButton.Value
+                    app.PlayingButton.Value = false;
+                else
+                    app.ResetButton.Value = false;
+                end
+                
+                initialize_Data(app)
+                
+                refresh_Anime_Axes(app)
+                drawnow
             end
         end
     end
