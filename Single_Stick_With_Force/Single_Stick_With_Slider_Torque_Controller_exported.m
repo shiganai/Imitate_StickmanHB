@@ -1,4 +1,4 @@
-classdef Single_Stick_exported < matlab.apps.AppBase
+classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -155,7 +155,7 @@ classdef Single_Stick_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = Single_Stick_exported
+        function app = Single_Stick_With_Slider_Torque_Controller_exported
 
             % Create UIFigure and components
             createComponents(app)
