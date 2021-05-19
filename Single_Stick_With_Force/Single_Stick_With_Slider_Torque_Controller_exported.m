@@ -18,20 +18,21 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         stick matlab.graphics.chart.primitive.Line
         theta_0 double
         dtheta_0 double
+        Mtheta double
     end
     
     methods (Access = private)
         
-%         function dotq = ddt(app, t, q, Lc, M, g)
-%             theta = q(1);
-%             dtheta = q(2);
-%             
-%             Mtheta = 0;
-%             
-%             ddtheta = find_ddtheta(Lc,M,Mtheta,g,theta);
-%             
-%             dotq = [dtheta, ddtheta]';
-%         end
+        %         function dotq = ddt(app, t, q, Lc, M, g)
+        %             theta = q(1);
+        %             dtheta = q(2);
+        %
+        %             Mtheta = 0;
+        %
+        %             ddtheta = find_ddtheta(Lc,M,Mtheta,g,theta);
+        %
+        %             dotq = [dtheta, ddtheta]';
+        %         end
     end
     
 
@@ -46,9 +47,9 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.time_step = 0.05;
             app.dtheta_0 = 0;
             app.theta_0 = 0/2 * pi;
-%             app.theta_0 = 1/2 * pi;
+            %             app.theta_0 = 1/2 * pi;
             
-            app.stick = plot(app.UIAxes, [0, app.Lc * cos(app.theta_0 + 3/2 * pi)], [0, app.Lc * sin(app.theta_0 + 3/2 * pi)], '-o');
+            app.stick = plot(app.UIAxes, [0, app.Lc * cos(app.theta_0 + 3/2 * pi)], [0, app.Lc * sin(app.theta_0 + 3/2 * pi)], '-', 'LineWidth', 2);
             xlim(app.UIAxes, [-app.Lc, app.Lc])
             ylim(app.UIAxes, [-app.Lc, app.Lc])
         end
@@ -62,14 +63,11 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                     t = [0, app.time_step];
                     q0 = [app.theta_0, app.dtheta_0]';
                     
-                    %                     Mtheta = app.EditField.Value;
-                    Mtheta = app.Slider.Value;
-                    
-                    [~, q] = ode45(@(t,q) ddt(t, q,app.Lc, app.M, app.g, Mtheta), t, q0);
+                    [~, q] = ode45(@(t,q) ddt(t, q,app.Lc, app.M, app.g, app.Mtheta), t, q0);
                     
                     theta = q(:,1);
                     dtheta = q(:,2);
-                        
+                    
                     x = app.Lc * cos(theta + 3/2 * pi);
                     y = app.Lc * sin(theta + 3/2 * pi);
                     
@@ -107,6 +105,20 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                 end
             end
         end
+
+        % Value changing function: Slider
+        function SliderValueChanging(app, event)
+            changingValue = event.Value;
+            app.Mtheta = changingValue;
+        end
+
+        % Value changed function: ResetButton
+        function ResetButtonValueChanged(app, event)
+            value = app.ResetButton.Value;
+            if value
+                app.PlayingButton.Value = false;
+            end
+        end
     end
 
     % Component initialization
@@ -129,10 +141,12 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             % Create Slider
             app.Slider = uislider(app.UIFigure);
             app.Slider.Limits = [-10 10];
+            app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
             app.Slider.Position = [35 50 573 3];
 
             % Create ResetButton
             app.ResetButton = uibutton(app.UIFigure, 'state');
+            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
             app.ResetButton.Position = [158 72 100 22];
 
