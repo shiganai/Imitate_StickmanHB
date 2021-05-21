@@ -2,12 +2,14 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure       matlab.ui.Figure
-        PlayingButton  matlab.ui.control.StateButton
-        Slider         matlab.ui.control.Slider
-        ResetButton    matlab.ui.control.StateButton
-        FrameButton    matlab.ui.control.Button
-        UIAxes         matlab.ui.control.UIAxes
+        UIFigure                  matlab.ui.Figure
+        PlayingButton             matlab.ui.control.StateButton
+        Slider                    matlab.ui.control.Slider
+        ResetButton               matlab.ui.control.StateButton
+        FrameButton               matlab.ui.control.Button
+        PlaySpeedxEditFieldLabel  matlab.ui.control.Label
+        PlaySpeedxEditField       matlab.ui.control.NumericEditField
+        UIAxes                    matlab.ui.control.UIAxes
     end
 
     
@@ -18,7 +20,8 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         M2 double
         g double
         time_step double
-        stick matlab.graphics.chart.primitive.Line
+        stick_Body matlab.graphics.chart.primitive.Line
+        stick_Leg matlab.graphics.chart.primitive.Line
         th1 double
         dth1 double
         th2 double
@@ -32,10 +35,10 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     methods (Access = private)
         
         function initialize_Data(app)
-            app.th1 = 0/2 * pi;
+            app.th1 = 2/2 * pi;
             app.dth1 = 0;
             
-            app.th2 = 0/2 * pi;
+            app.th2 = 2/2 * pi;
             app.dth2 = 0;
         end
         
@@ -45,15 +48,16 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             x2 = x1 + app.Lc2 * cos(app.th2 + 3/2 * pi);
             y2 = y1 + app.Lc2 * sin(app.th2 + 3/2 * pi);
             
-            app.stick.XData(2) = x1;
-            app.stick.YData(2) = y1;
+            app.stick_Body.XData(2) = x1;
+            app.stick_Body.YData(2) = y1;
             
-            app.stick.XData(3) = x2;
-            app.stick.YData(3) = y2;
+            app.stick_Leg.XData(1) = x1;
+            app.stick_Leg.YData(1) = y1;
+            app.stick_Leg.XData(2) = x2;
+            app.stick_Leg.YData(2) = y2;
         end
         
         function refresh_Quivers(app)
-            
             Fx_out = find_Fx_out(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,app.tau2,app.th1,app.th2);
             Fy_out = find_Fy_out(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,app.tau2,app.th1,app.th2);
 %             Fx_out_G = find_Fx_out(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,0,0,app.th1,app.th2);
@@ -68,26 +72,26 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 %             app.quivers(3).UData = Fx_out_tau2 / app.quiver_Ratio;
 %             app.quivers(3).VData = Fy_out_tau2 / app.quiver_Ratio;
             
-            Fx_in = find_Fx_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,app.tau2,app.th1,app.th2);
-            Fy_in = find_Fy_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,app.tau2,app.th1,app.th2);
+%             Fx_in = find_Fx_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,app.tau2,app.th1,app.th2);
+%             Fy_in = find_Fy_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,app.tau2,app.th1,app.th2);
 %             Fx_in_G = find_Fx_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,0,0,app.th1,app.th2);
 %             Fy_in_G = find_Fy_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,0,0,app.th1,app.th2);
 %             Fx_in_tau2 = Fx_in - find_Fx_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,0,app.th1,app.th2);
 %             Fy_in_tau2 = Fy_in - find_Fy_in(app.Lc1,app.Lc2,app.M1,app.M2,app.dth1,app.dth2,app.g,app.tau1,0,app.th1,app.th2);
             
-            app.quivers(4).UData = Fx_in / app.quiver_Ratio;
-            app.quivers(4).VData = Fy_in / app.quiver_Ratio;
+%             app.quivers(4).UData = Fx_in / app.quiver_Ratio;
+%             app.quivers(4).VData = Fy_in / app.quiver_Ratio;
 %             app.quivers(5).UData = Fx_in_G / app.quiver_Ratio;
 %             app.quivers(5).VData = Fy_in_G / app.quiver_Ratio;
 %             app.quivers(6).UData = Fx_in_tau2 / app.quiver_Ratio;
 %             app.quivers(6).VData = Fy_in_tau2 / app.quiver_Ratio;
             
-            app.quivers(4).XData = app.stick.XData(2);
-            app.quivers(4).YData = app.stick.YData(2);
-%             app.quivers(5).XData = app.stick.XData(2);
-%             app.quivers(5).YData = app.stick.YData(2);
-%             app.quivers(6).XData = app.stick.XData(2);
-%             app.quivers(6).YData = app.stick.YData(2);
+%             app.quivers(4).XData = app.stick_Body.XData(2);
+%             app.quivers(4).YData = app.stick_Body.YData(2);
+%             app.quivers(5).XData = app.stick_Body.XData(2);
+%             app.quivers(5).YData = app.stick_Body.YData(2);
+%             app.quivers(6).XData = app.stick_Body.XData(2);
+%             app.quivers(6).YData = app.stick_Body.YData(2);
             
         end
         
@@ -117,11 +121,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function [ddth1,ddth2] = find_ddth1_ddth2(Lc1,Lc2,M1,M2,dth1,dth2,g,tau1,tau2,th1,th2)
-            %FIND_DDTH1_DDTH2
-            %    [DDTH1,DDTH2] = FIND_DDTH1_DDTH2(LC1,LC2,M1,M2,DTH1,DTH2,G,TAU1,TAU2,TH1,TH2)
-            
-            %    This function was generated by the Symbolic Math Toolbox version 8.6.
-            %    19-May-2021 16:23:35
             
             t2 = sin(th1);
             t3 = sin(th2);
@@ -154,11 +153,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function Fx_in = find_Fx_in(Lc1,Lc2,M1,M2,dth1,dth2,g,tau1,tau2,th1,th2)
-            %FIND_FX_IN
-            %    FX_IN = FIND_FX_IN(LC1,LC2,M1,M2,DTH1,DTH2,G,TAU1,TAU2,TH1,TH2)
-            
-            %    This function was generated by the Symbolic Math Toolbox version 8.6.
-            %    19-May-2021 23:24:35
             
             t2 = cos(th1);
             t3 = cos(th2);
@@ -184,11 +178,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function Fx_out = find_Fx_out(Lc1,Lc2,M1,M2,dth1,dth2,g,tau1,tau2,th1,th2)
-            %FIND_FX_OUT
-            %    FX_OUT = FIND_FX_OUT(LC1,LC2,M1,M2,DTH1,DTH2,G,TAU1,TAU2,TH1,TH2)
-            
-            %    This function was generated by the Symbolic Math Toolbox version 8.6.
-            %    19-May-2021 23:24:35
             
             t2 = cos(th1);
             t3 = cos(th2);
@@ -211,11 +200,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function Fy_in = find_Fy_in(Lc1,Lc2,M1,M2,dth1,dth2,g,tau1,tau2,th1,th2)
-            %FIND_FY_IN
-            %    FY_IN = FIND_FY_IN(LC1,LC2,M1,M2,DTH1,DTH2,G,TAU1,TAU2,TH1,TH2)
-            
-            %    This function was generated by the Symbolic Math Toolbox version 8.6.
-            %    19-May-2021 23:24:35
             
             t2 = cos(th1);
             t3 = cos(th2);
@@ -243,11 +227,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function Fy_out = find_Fy_out(Lc1,Lc2,M1,M2,dth1,dth2,g,tau1,tau2,th1,th2)
-            %FIND_FY_OUT
-            %    FY_OUT = FIND_FY_OUT(LC1,LC2,M1,M2,DTH1,DTH2,G,TAU1,TAU2,TH1,TH2)
-            
-            %    This function was generated by the Symbolic Math Toolbox version 8.6.
-            %    19-May-2021 23:24:35
             
             t2 = cos(th1);
             t3 = sin(th1);
@@ -278,9 +257,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         % Code that executes after component creation
         function startupFcn(app)
             app.Lc1 = 1;
-            app.M1 = 1;
+            app.M1 = 2;
             app.Lc2 = 1;
-            app.M2 = 1;
+            app.M2 = 2;
             
             app.g = 1;
             app.time_step = 0.05;
@@ -290,12 +269,20 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.tau1 = 0;
             app.tau2 = 0;
             
-            app.quiver_Ratio = 2;
+            app.quiver_Ratio = 4;
             
-            app.stick = plot(app.UIAxes, ...
-                [0, app.Lc1 * cos(app.th1 + 3/2 * pi), app.Lc1 * cos(app.th1 + 3/2 * pi) + app.Lc2 * cos(app.th2 + 3/2 * pi)], ...
-                [0, app.Lc1 * sin(app.th1 + 3/2 * pi), app.Lc1 * sin(app.th1 + 3/2 * pi) + app.Lc2 * sin(app.th2 + 3/2 * pi)], ...
-                '-', 'LineWidth', 2);
+            app.stick_Body = plot(app.UIAxes, ...
+                [0, app.Lc1 * cos(app.th1 + 3/2 * pi)], ...
+                [0, app.Lc1 * sin(app.th1 + 3/2 * pi)], ...
+                '-', 'LineWidth', 3);
+            
+            hold(app.UIAxes, "on")
+            app.stick_Leg = plot(app.UIAxes, ...
+                [app.Lc1 * cos(app.th1 + 3/2 * pi), app.Lc1 * cos(app.th1 + 3/2 * pi) + app.Lc2 * cos(app.th2 + 3/2 * pi)], ...
+                [app.Lc1 * sin(app.th1 + 3/2 * pi), app.Lc1 * sin(app.th1 + 3/2 * pi) + app.Lc2 * sin(app.th2 + 3/2 * pi)], ...
+                '-', 'LineWidth', 3);
+            hold(app.UIAxes, "off")
+            
             xlim(app.UIAxes, [-(app.Lc1 + app.Lc2), app.Lc1 + app.Lc2])
             ylim(app.UIAxes, [-(app.Lc1 + app.Lc2), app.Lc1 + app.Lc2])
             
@@ -317,10 +304,11 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.quivers(1,1) = quiver(app.UIAxes, 0, 0, Fx_out / app.quiver_Ratio, Fy_out / app.quiver_Ratio);
             app.quivers(2,1) = quiver(app.UIAxes, 0, 0, Fx_out_G / app.quiver_Ratio, Fy_out_G / app.quiver_Ratio, 'Color', 'none');
             app.quivers(3,1) = quiver(app.UIAxes, 0, 0, Fx_out_tau2 / app.quiver_Ratio, Fy_out_tau2 / app.quiver_Ratio, 'Color', 'none');
-            app.quivers(4,1) = quiver(app.UIAxes, app.stick.XData(2), app.stick.YData(2), Fx_in / app.quiver_Ratio, Fy_in / app.quiver_Ratio);
-            app.quivers(5,1) = quiver(app.UIAxes, app.stick.XData(2), app.stick.YData(2), Fx_in_G / app.quiver_Ratio, Fy_in_G / app.quiver_Ratio, 'Color', 'none');
-            app.quivers(6,1) = quiver(app.UIAxes, app.stick.XData(2), app.stick.YData(2), Fx_in_tau2 / app.quiver_Ratio, Fy_in_tau2 / app.quiver_Ratio, 'Color', 'none');
+            app.quivers(4,1) = quiver(app.UIAxes, app.stick_Body.XData(2), app.stick_Body.YData(2), Fx_in / app.quiver_Ratio, Fy_in / app.quiver_Ratio, 'Color', 'none');
+            app.quivers(5,1) = quiver(app.UIAxes, app.stick_Body.XData(2), app.stick_Body.YData(2), Fx_in_G / app.quiver_Ratio, Fy_in_G / app.quiver_Ratio, 'Color', 'none');
+            app.quivers(6,1) = quiver(app.UIAxes, app.stick_Body.XData(2), app.stick_Body.YData(2), Fx_in_tau2 / app.quiver_Ratio, Fy_in_tau2 / app.quiver_Ratio, 'Color', 'none');
             hold(app.UIAxes, "off")
+            
         end
 
         % Value changed function: PlayingButton
@@ -334,7 +322,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                     refresh_Stick(app)
                     refresh_Quivers(app)
                     
-                    pause(app.time_step/1.2)
+                    pause(app.time_step / app.PlaySpeedxEditField.Value)
                     drawnow
                     
                     if ~app.PlayingButton.Value
@@ -393,42 +381,55 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 639 480];
+            app.UIFigure.Position = [400 200 939 724];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create PlayingButton
             app.PlayingButton = uibutton(app.UIFigure, 'state');
             app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
             app.PlayingButton.Text = 'Playing';
-            app.PlayingButton.Position = [271 72 100 22];
+            app.PlayingButton.Position = [436 232 70 22];
 
             % Create Slider
             app.Slider = uislider(app.UIFigure);
             app.Slider.Limits = [-1 1];
+            app.Slider.MajorTicks = [-1 -0.5 0 0.5 1];
+            app.Slider.MajorTickLabels = {'-1', '-0.5', '0', '0.5', '1'};
             app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
-            app.Slider.Position = [186 51 311 3];
+            app.Slider.MinorTicks = [-1 -0.96 -0.92 -0.88 -0.84 -0.8 -0.76 -0.72 -0.68 -0.64 -0.6 -0.56 -0.52 -0.48 -0.44 -0.4 -0.36 -0.32 -0.28 -0.24 -0.2 -0.16 -0.12 -0.08 -0.04 0 0.04 0.0800000000000001 0.12 0.16 0.2 0.24 0.28 0.32 0.36 0.4 0.44 0.48 0.52 0.56 0.6 0.64 0.68 0.72 0.76 0.8 0.84 0.88 0.92 0.96 1];
+            app.Slider.Position = [358 79 226 3];
 
             % Create ResetButton
             app.ResetButton = uibutton(app.UIFigure, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [158 72 100 22];
+            app.ResetButton.Position = [436 196 70 22];
 
             % Create FrameButton
             app.FrameButton = uibutton(app.UIFigure, 'push');
             app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
-            app.FrameButton.Position = [409 72 74 22];
+            app.FrameButton.Position = [436 160 70 22];
             app.FrameButton.Text = '1 Frame';
+
+            % Create PlaySpeedxEditFieldLabel
+            app.PlaySpeedxEditFieldLabel = uilabel(app.UIFigure);
+            app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
+            app.PlaySpeedxEditFieldLabel.Position = [416 113 76 22];
+            app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
+
+            % Create PlaySpeedxEditField
+            app.PlaySpeedxEditField = uieditfield(app.UIFigure, 'numeric');
+            app.PlaySpeedxEditField.Limits = [0.1 2];
+            app.PlaySpeedxEditField.Position = [491 113 29 22];
+            app.PlaySpeedxEditField.Value = 0.2;
 
             % Create UIAxes
             app.UIAxes = uiaxes(app.UIFigure);
-            title(app.UIAxes, 'Title')
-            xlabel(app.UIAxes, 'X')
-            ylabel(app.UIAxes, 'Y')
-            zlabel(app.UIAxes, 'Z')
             app.UIAxes.DataAspectRatio = [1 1 1];
+            app.UIAxes.XColor = 'none';
+            app.UIAxes.YColor = 'none';
             app.UIAxes.FontSize = 12;
-            app.UIAxes.Position = [171 106 300 300];
+            app.UIAxes.Position = [253 265 439 439];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
