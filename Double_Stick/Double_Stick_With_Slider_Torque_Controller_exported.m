@@ -381,7 +381,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [400 200 939 724];
+            app.UIFigure.Position = [400 100 939 724];
             app.UIFigure.Name = 'MATLAB App';
 
             % Create PlayingButton
