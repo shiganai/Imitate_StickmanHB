@@ -84,6 +84,7 @@ syms dx_After dx_Before real
 syms dy_After dy_Before real
 syms I_F_X I_F_Y real
 syms dx_G_Before dy_G_Before real
+syms myu real
 
 % calc around the center of mass
 % equations = ([
@@ -101,27 +102,27 @@ equations = ([
 
 equations = subs(equations, [f_X, f_Y], [I_F_X, I_F_Y]);
 
-equations = (subs(equations, [dx_After, dy_After], [sym(0), sym(0)]));
+equations = (subs(equations, [dy_After, I_F_X], [sym(0), I_F_Y * myu]));
 
 % equations(3)
 
-variables = [I_F_X, I_F_Y, dtheta_After];
+variables = [I_F_Y, dx_After, dtheta_After];
 
 [A, B] = equationsToMatrix(equations, variables);
 X = simplify(inv(A)*B);
 
-I_F_X_Eq = simplify(X(1));
-I_F_Y_Eq = simplify(X(2));
+I_F_Y_Eq = simplify(X(1));
+dx_After_Eq = simplify(X(2));
 dtheta_After_Eq = simplify(X(3));
 
-v_G_Delta = subs(v_G, [dx, dy, dtheta], [0, 0, dtheta_After_Eq]) ...
+v_G_Delta = subs(v_G, [dx, dy, dtheta], [dx_After_Eq, 0, dtheta_After_Eq]) ...
     - subs(v_G, [dx, dy, dtheta], [dx_Before, dy_Before, dtheta_Before]);
 I_G_Delta = v_G_Delta * M;
 I_G_Delta(1);
 
-simplify([I_F_X_Eq, I_F_Y_Eq] - I_G_Delta)
+simplify([I_F_Y_Eq * myu, I_F_Y_Eq] - I_G_Delta)
 
-matlabFunction(dtheta_After_Eq, I_F_X_Eq, I_F_Y_Eq, 'file', 'find_Status_After_Collision.m', 'outputs', {'dtheta_After', 'I_F_X', 'I_F_Y'})
+matlabFunction(dtheta_After_Eq, dx_After_Eq, I_F_Y_Eq, 'file', 'find_Status_After_Collision_Slides.m', 'outputs', {'dtheta_After', 'dx_After', 'I_F_Y'})
 
 
 
