@@ -6,3 +6,4 @@ function ddtheta = find_dd_Touch(Lc,M,g,tau,theta)
 %    22-May-2021 16:18:52
 
 ddtheta = (1.0./Lc.^2.*(tau.*3.0-Lc.*M.*g.*cos(theta).*3.0))./(M.*4.0);
+end

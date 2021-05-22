@@ -67,7 +67,7 @@ ddtheta_eq = X(2,1);
 f_Y = subs(f_Y, variables, X');
 f_X = f_Y * myu;
 
-matlabFunction(ddx_eq, ddtheta_eq, formula(f_X), formula(f_Y), 'file', 'find_dd_Slides.m', 'outputs', {'ddx','ddtheta', 'f_X', 'f_Y'})
+matlabFunction(ddtheta_eq, ddx_eq, formula(f_X), formula(f_Y), 'file', 'find_dd_Slides.m', 'outputs', {'ddtheta', 'ddx', 'f_X', 'f_Y'})
 % matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Slides.m', 'outputs', {'f_Y', 'f_X'})
 
 dmomentumG = subs(dmomentumG, variables, X');

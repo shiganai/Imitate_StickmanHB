@@ -30,8 +30,8 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
         theta double
         dtheta double
         
-        f_X = 0
-        f_Y = 0
+        f_X double
+        f_Y double
         
         tau = 0;
         time_step = 0.01;
@@ -68,21 +68,124 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
             app.stick.YData(2) = app.y + 2 * app.Lc * sin(app.theta);
         end
         
+        
+        function run_Ode(app)
+            if isequal(app.Status_Label.Text, 'Inair')
+                run_Ode_Inair(app)
+            elseif isequal(app.Status_Label.Text, 'Touch')
+                run_Ode_Touch(app)
+            elseif isequal(app.Status_Label.Text, 'Slides')
+                run_Ode_Slides(app)
+            end
+            
+        end
+        
+        function run_Ode_Inair(app)
+            t = [0, app.time_step];
+            q0 = [app.theta, app.dtheta, app.x, app.dx, app.y, app.dy]';
+            ode_Option = odeset('Events', @(t,q) event_Inair(app, q));
+            
+            [~, q, ~, ~, ie] = ode45(@(t,q) ddt_Inair(app, q), t, q0, ode_Option);
+            
+            app.theta = q(end,1);
+            app.dtheta = q(end,2);
+            app.x = q(end,3);
+            app.dx = q(end,4);
+            app.y = q(end,5);
+            app.dy = q(end,6);
+            
+            if ~isempty(ie)
+                if ie(end) == 1
+                    app.Status_Label.Text = 'Collision';
+                    [dtheta_After,I_F_X,I_F_Y] = find_Status_After_Collision(app.Lc,app.M,app.dtheta,app.dx,app.dy,app.theta);
+                    
+                    app.Status_Label.Text = 'Touch';
+                    
+                    if abs(I_F_X / I_F_Y) > app.myu
+                        if I_F_X / I_F_Y < 0
+                            [dtheta_After,dx_After] = find_Status_After_Collision_Slides(app.Lc,app.M,app.dtheta,app.dx,app.dy,-app.myu,app.theta);
+                        else
+                            [dtheta_After,dx_After] = find_Status_After_Collision_Slides(app.Lc,app.M,app.dtheta,app.dx,app.dy,app.myu,app.theta);
+                        end
+                        app.dx = dx_After;
+                        app.Status_Label.Text = 'Slides';
+                    end
+                    app.dtheta = dtheta_After;
+                end
+            end
+        end
+        
         function dotq = ddt_Inair(app, q)
             
-            %             x_Tmp = q(1);
-            dx_Tmp = q(2);
+            theta_Tmp = q(1);
+            dtheta_Tmp = q(2);
             
-            %             y_Tmp = q(3);
-            dy_Tmp = q(4);
+            dx_Tmp = q(4);
             
-            theta_Tmp = q(5);
-            dtheta_Tmp = q(6);
+            dy_Tmp = q(6);
             
-            [ddx_eq,ddy_eq,ddtheta_eq] = find_dd_Inair(app.Lc,app.M,dtheta_Tmp,app.f_X,app.f_Y,app.g,app.tau,theta_Tmp);
+            [ddtheta_eq,ddx_eq,ddy_eq] = find_dd_Inair(app.Lc,app.M,dtheta_Tmp,app.f_X,app.f_Y,app.g,app.tau,theta_Tmp);
             
-            dotq = [dx_Tmp, ddx_eq, dy_Tmp, ddy_eq, dtheta_Tmp, ddtheta_eq]';
+            dotq = [dtheta_Tmp, ddtheta_eq, dx_Tmp, ddx_eq, dy_Tmp, ddy_eq]';
             
+        end
+        
+        function [value, isterminal, direction] = event_Inair(app, q)
+            y_Tmp = q(5);
+            value = y_Tmp - (-0.5);
+            direction = 0;
+            isterminal = 1;
+        end
+        
+        function run_Ode_Slides(app)
+            t = [0, app.time_step];
+            q0 = [app.theta, app.dtheta, app.x, app.dx]';
+            ode_Option = odeset('Events', @(t,q) event_Slides(app, q));
+            
+            [~, q, ~, ~, ie] = ode45(@(t,q) ddt_Slides(app, q), t, q0, ode_Option);
+            
+            app.theta = q(end,1);
+            app.dtheta = q(end,2);
+            app.x = q(end,3);
+            app.dx = q(end,4);
+            
+            if ~isempty(ie)
+                if ie(end) == 1
+                    app.Status_Label.Text = 'Touch';
+                end
+            end
+        end
+        
+        function dotq = ddt_Slides(app, q)
+            
+            theta_Tmp = q(1);
+            dtheta_Tmp = q(2);
+            dx_Tmp = q(4);
+            
+            [ddtheta,ddx,f_X_Tmp] = find_dd_Slides(app.Lc,app.M,dtheta_Tmp,app.g,app.myu,app.tau,theta_Tmp);
+            
+            if sign(f_X_Tmp) == dx_Tmp
+                [ddtheta,ddx] = find_dd_Slides(app.Lc,app.M,dtheta_Tmp,app.g,-app.myu,app.tau,theta_Tmp);
+            end
+            
+            dotq = [dtheta_Tmp, ddtheta, dx_Tmp, ddx]';
+            
+        end
+        
+        function [value, isterminal, direction] = event_Slides(app, q)
+            dx_Tmp = q(4);
+            value = dx_Tmp;
+            direction = 0;
+            isterminal = 1;
+        end
+        
+        function run_Ode_Touch(app)
+            t = [0, app.time_step];
+            q0 = [app.theta, app.dtheta]';
+            [~, q] = ode45(@(t,q) ddt_Touch(app, q), t, q0);
+            
+            app.theta = q(end,1);
+            app.dtheta = q(end,2);
         end
         
         function dotq = ddt_Touch(app, q)
@@ -96,137 +199,53 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
             
         end
         
-        function dotq = ddt_Slides(app, q)
-            
-            %             x_Tmp = q(1);
-            dx_Tmp = q(2);
-            theta_Tmp = q(3);
-            dtheta_Tmp = q(4);
-            
-            [ddx,ddtheta,f_X_Tmp] = find_dd_Slides(app.Lc,app.M,dtheta_Tmp,app.g,app.myu,app.tau,theta_Tmp);
-            
-            if sign(f_X_Tmp) == dx_Tmp
-                [ddx,ddtheta] = find_dd_Slides(app.Lc,app.M,dtheta_Tmp,app.g,app.myu,app.tau,theta_Tmp);
-            end
-            
-            dotq = [dx_Tmp, ddx, dtheta_Tmp, ddtheta]';
-            
-        end
-        
-        function run_Ode(app)
-            
-            t = [0, app.time_step];
-            
-            if isequal(app.Status_Label.Text, 'Inair')
-                q0 = [app.x, app.dx, app.y, app.dy, app.theta, app.dtheta]';
-                ode_Option = odeset('Events', @(t,q) event_Inair(app, q));
-                
-                [~, q, ~, ~, ie] = ode45(@(t,q) ddt_Inair(app, q), t, q0, ode_Option);
-                
-                app.x = q(end,1);
-                app.dx = q(end,2);
-                app.y = q(end,3);
-                app.dy = q(end,4);
-                app.theta = q(end,5);
-                app.dtheta = q(end,6);
-                
-                if ~isempty(ie)
-                    if ie(end) == 1
-                        app.Status_Label.Text = 'Collision';
-                        [app.dtheta,I_F_X,I_F_Y] = find_Status_After_Collision(app.I,app.Lc,q(end,6),app.dx,app.dy,app.M,app.theta);
-                        
-                        app.Status_Label.Text = 'Touch';
-                        
-                        if abs(I_F_X / I_F_Y) > app.myu
-                            if I_F_X / I_F_Y < 0
-                                [app.dtheta,app.dx,I_F_Y] = find_Status_After_Collision_Slides(app.I,app.Lc,q(end,6),q(end,2),app.dy,app.M,app.myu,app.theta);
-                            else
-                                [app.dtheta,app.dx,I_F_Y] = find_Status_After_Collision_Slides(app.I,app.Lc,q(end,6),q(end,2),app.dy,app.M,-app.myu,app.theta);
-                            end
-                            app.Status_Label.Text = 'Slides';
-                        end
-                        
-                        %                         if abs(I_F_X) > app.myu * abs(I_F_Y)
-                        %                             [app.dtheta,app.dx,I_F_Y] = find_Status_After_Collision_Slides(app.I,app.Lc,q(end,6),q(end,2),app.dy,app.M,app.myu,app.theta);
-                        %                             if sign(I_F_Y) == sign(app.dx)
-                        %                                 [app.dtheta,app.dx,I_F_Y] = find_Status_After_Collision_Slides(app.I,app.Lc,q(end,6),q(end,2),app.dy,app.M,-app.myu,app.theta);
-                        %                             end
-                        %                             app.Status_Label.Text = 'Slides';
-                        %                         end
-                    end
-                end
-                
-            elseif isequal(app.Status_Label.Text, 'Touch')
-                q0 = [app.theta, app.dtheta]';
-                [~, q] = ode45(@(t,q) ddt_Touch(app, q), t, q0);
-                
-                app.theta = q(end,1);
-                app.dtheta = q(end,2);
-            elseif isequal(app.Status_Label.Text, 'Slides')
-                q0 = [app.x, app.dx, app.theta, app.dtheta]';
-                ode_Option = odeset('Events', @(t,q) event_Slides(app, q));
-                
-                [~, q, ~, ~, ie] = ode45(@(t,q) ddt_Slides(app, q), t, q0, ode_Option);
-                
-                app.x = q(end,1);
-                app.dx = q(end,2);
-                app.theta = q(end,3);
-                app.dtheta = q(end,4);
-                
-                if ~isempty(ie)
-                    if ie(end) == 1
-                        app.Status_Label.Text = 'Touch';
-                    end
-                end
-            end
-            
-        end
-        
-        function [value, isterminal, direction] = event_Inair(app, q)
-            y_Tmp = q(3);
-            value = y_Tmp - (-0.5);
-            direction = 0;
-            isterminal = 1;
-        end
-        
-        function [value, isterminal, direction] = event_Slides(app, q)
-            dx_Tmp = q(2);
-            value = dx_Tmp;
-            direction = 0;
-            isterminal = 1;
-        end
-        
-        function [dtheta_After,I_F_X,I_F_Y] = find_Status_After_Collision(I,Lc,dtheta_Before,dx_Before,dy_Before,m,theta)
-            t2 = cos(theta);
-            t3 = sin(theta);
-            t4 = Lc.^2;
-            t5 = t2.^2;
-            t6 = m.*t4;
-            t7 = I+t6;
-            t8 = 1.0./t7;
-            dtheta_After = t8.*(I.*dtheta_Before-Lc.*dx_Before.*m.*t3+Lc.*dy_Before.*m.*t2);
+        function [dtheta_After,I_F_X,I_F_Y] = find_Status_After_Collision(Lc,M,dtheta_Before,dx_Before,dy_Before,theta)
+            dtheta_After = (Lc.*dtheta_Before.*4.0+dy_Before.*cos(theta).*3.0-dx_Before.*sin(theta).*3.0)./(Lc.*4.0);
             if nargout > 1
-                I_F_X = -m.*t8.*(I.*dx_Before+dx_Before.*t5.*t6+dy_Before.*t2.*t3.*t6+I.*Lc.*dtheta_Before.*t3);
+                t2 = theta.*2.0;
+                t3 = cos(t2);
+                t4 = sin(t2);
+                I_F_X = M.*(dx_Before.*5.0+dx_Before.*t3.*3.0+dy_Before.*t4.*3.0).*(-1.0./8.0);
             end
             if nargout > 2
-                I_F_Y = -m.*t8.*(I.*dy_Before+dy_Before.*t6+(dx_Before.*t6.*sin(theta.*2.0))./2.0-dy_Before.*t5.*t6-I.*Lc.*dtheta_Before.*t2);
+                I_F_Y = M.*(dy_Before.*5.0+dx_Before.*t4.*3.0-dy_Before.*t3.*3.0).*(-1.0./8.0);
             end
         end
         
-        function [ddx_eq,ddy_eq,ddtheta_eq] = find_dd_Inair(Lc,M,dtheta,f_X,f_Y,g,tau,theta)
+        function [dtheta_After,dx_After,I_F_Y] = find_Status_After_Collision_Slides(Lc,M,dtheta_Before,dx_Before,dy_Before,myu,theta)
+            t2 = cos(theta);
+            t3 = sin(theta);
+            dtheta_After = dtheta_Before+(dy_Before.*(t2-myu.*t3).*6.0)./(Lc.*(t2.^2.*6.0-myu.*t2.*t3.*6.0+2.0));
+            if nargout > 1
+                t4 = theta.*2.0;
+                t5 = cos(t4);
+                t6 = sin(t4);
+                t7 = t5.*3.0;
+                t8 = myu.*t6.*3.0;
+                t9 = -t8;
+                t10 = t7+t9+5.0;
+                t11 = 1.0./t10;
+                dx_After = dx_Before+dy_Before.*t11.*(myu.*-5.0+t6.*3.0+myu.*t7);
+            end
+            if nargout > 2
+                I_F_Y = M.*dy_Before.*t11.*-2.0;
+            end
+        end
+        
+        function [ddtheta_eq,ddx_eq,ddy_eq] = find_dd_Inair(Lc,M,dtheta,f_X,f_Y,g,tau,theta)
             t2 = cos(theta);
             t3 = sin(theta);
             t4 = Lc.^2;
             t5 = dtheta.^2;
             t7 = 1.0./Lc;
             t8 = 1.0./M;
-            t6 = t2.^2;
-            ddx_eq = t7.*t8.*(Lc.*f_X.*4.0+t3.*tau.*3.0-Lc.*f_X.*t6.*3.0+M.*t2.*t4.*t5-Lc.*f_Y.*t2.*t3.*3.0);
+            ddtheta_eq = (t8.*(tau+Lc.*f_X.*t3-Lc.*f_Y.*t2).*3.0)./t4;
             if nargout > 1
-                ddy_eq = t7.*t8.*(Lc.*f_Y-t2.*tau.*3.0-Lc.*M.*g+Lc.*f_Y.*t6.*3.0+M.*t3.*t4.*t5-Lc.*f_X.*t2.*t3.*3.0);
+                t6 = t2.^2;
+                ddx_eq = t7.*t8.*(Lc.*f_X.*4.0+t3.*tau.*3.0-Lc.*f_X.*t6.*3.0+M.*t2.*t4.*t5-Lc.*f_Y.*t2.*t3.*3.0);
             end
             if nargout > 2
-                ddtheta_eq = (t8.*(tau+Lc.*f_X.*t3-Lc.*f_Y.*t2).*3.0)./t4;
+                ddy_eq = t7.*t8.*(Lc.*f_Y-t2.*tau.*3.0-Lc.*M.*g+Lc.*f_Y.*t6.*3.0+M.*t3.*t4.*t5-Lc.*f_X.*t2.*t3.*3.0);
             end
         end
         
@@ -234,35 +253,7 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
             ddtheta = (1.0./Lc.^2.*(tau.*3.0-Lc.*M.*g.*cos(theta).*3.0))./(M.*4.0);
         end
         
-        function [dtheta_After,dx_After,I_F_Y] = find_Status_After_Collision_Slides(I,Lc,dtheta_Before,dx_Before,dy_Before,m,myu,theta)
-            t2 = cos(theta);
-            t3 = I.*2.0;
-            t4 = Lc.^2;
-            t5 = theta.*2.0;
-            t6 = t2.^2;
-            t7 = sin(t5);
-            t8 = m.*myu.*t4.*t7;
-            t9 = m.*t4.*t6.*2.0;
-            t10 = -t8;
-            t11 = t3+t9+t10;
-            t12 = 1.0./t11;
-            dtheta_After = t12.*(I.*dtheta_Before+Lc.*dy_Before.*m.*t2-Lc.*dy_Before.*m.*myu.*sin(theta)).*2.0;
-            if nargout > 1
-                dx_After = t12.*(I.*dx_Before-(dx_Before.*t8)./2.0-I.*dy_Before.*myu+dx_Before.*m.*t4.*t6+I.*Lc.*dtheta_Before.*myu.*t2).*2.0;
-            end
-            if nargout > 2
-                I_F_Y = I.*m.*t12.*(dy_Before-Lc.*dtheta_Before.*t2).*-2.0;
-            end
-            
-        end
-        
-        function [ddx,ddtheta,f_X,f_Y] = find_dd_Slides(Lc,M,dtheta,g,myu,tau,theta)
-            %FIND_DD_SLIDES
-            %    [DDX,DDTHETA,F_X,F_Y] = FIND_DD_SLIDES(LC,M,DTHETA,G,MYU,TAU,THETA)
-            
-            %    This function was generated by the Symbolic Math Toolbox version 8.6.
-            %    22-May-2021 20:08:54
-            
+        function [ddtheta,ddx,f_X,f_Y] = find_dd_Slides(Lc,M,dtheta,g,myu,tau,theta)
             t2 = cos(theta);
             t3 = sin(theta);
             t4 = M.*g;
@@ -289,9 +280,9 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
             t27 = t7+t17+t19+t22+t23+t25;
             t24 = t13+t16+5.0;
             t26 = 1.0./t24;
-            ddx = t11.*t12.*t26.*(t3.*t7+Lc.*myu.*t4.*(5.0./2.0)-Lc.*t4.*t10.*(3.0./2.0)+myu.*t2.*t7-Lc.*myu.*t4.*t9.*(3.0./2.0)+M.*t2.*t5.*t6.*4.0-M.*myu.*t3.*t5.*t6.*4.0).*2.0;
+            ddtheta = (t12.*t26.*t27.*2.0)./t5;
             if nargout > 1
-                ddtheta = (t12.*t26.*t27.*2.0)./t5;
+                ddx = t11.*t12.*t26.*(t3.*t7+Lc.*myu.*t4.*(5.0./2.0)-Lc.*t4.*t10.*(3.0./2.0)+myu.*t2.*t7-Lc.*myu.*t4.*t9.*(3.0./2.0)+M.*t2.*t5.*t6.*4.0-M.*myu.*t3.*t5.*t6.*4.0).*2.0;
             end
             if nargout > 2
                 t28 = t2.*t11.*t26.*t27.*2.0;
@@ -302,6 +293,7 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
                 f_Y = t29;
             end
         end
+        
         
     end
     
@@ -375,7 +367,7 @@ classdef Single_Stick_With_Collision_exported < matlab.apps.AppBase
 
         % Value changed function: InitialThetaEditField
         function InitialThetaEditFieldValueChanged(app, event)
-            value = app.InitialThetaEditField.Value;
+            app.PlayingButton.Value = false;
             initialize_Data(app)
             refresh_Stick(app)
             drawnow

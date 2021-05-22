@@ -122,7 +122,7 @@ I_G_Delta(1);
 
 simplify([I_F_Y_Eq * myu, I_F_Y_Eq] - I_G_Delta)
 
-matlabFunction(dtheta_After_Eq, dx_After_Eq, I_F_Y_Eq, 'file', 'find_Status_After_Collision_Slides.m', 'outputs', {'dtheta_After', 'dx_After', 'I_F_Y'})
+% matlabFunction(dtheta_After_Eq, dx_After_Eq, I_F_Y_Eq, 'file', 'find_Status_After_Collision_Slides.m', 'outputs', {'dtheta_After', 'dx_After', 'I_F_Y'})
 
 
 

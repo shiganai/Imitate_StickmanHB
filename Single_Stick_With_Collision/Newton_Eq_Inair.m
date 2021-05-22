@@ -66,7 +66,7 @@ ddx_eq = simplify(X(1));
 ddy_eq = simplify(X(2));
 ddtheta_eq = simplify(X(3));
 
-% matlabFunction(ddx_eq, ddy_eq, ddtheta_eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddx_eq', 'ddy_eq', 'ddtheta_eq'})
+matlabFunction(ddtheta_eq, ddx_eq, ddy_eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddtheta_eq', 'ddx_eq', 'ddy_eq'})
 
 Torque_F = formula(cross([p_G, 0] - [x, y, 0],[f_X, f_Y, 0]));
 Torque_F = simplify(Torque_F(3));
