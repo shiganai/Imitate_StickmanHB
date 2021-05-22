@@ -54,7 +54,7 @@ ddtheta_eq = X(1,1);
 % parallel.defaultClusterProfile('local');
 % c = parcluster();
 
-matlabFunction(ddtheta_eq, 'file', 'find_ddtheta.m', 'outputs', {'ddtheta'})
+% matlabFunction(ddtheta_eq, 'file', 'find_ddtheta.m', 'outputs', {'ddtheta'})
 
 % job = createJob(c);
 % createTask(job, @matlabFunction, 1,{ddtheta_eq, 'file', 'find_ddtheta.m', 'outputs', {'ddtheta'}});
@@ -66,8 +66,8 @@ Fy_out = subs(Fy_out, ddtheta, ddtheta_eq);
 % Fx_out = expand(subs(subs(Fx_out, ddtheta, ddtheta_eq), Mtheta, 0))
 % Fy_out = expand(subs(subs(Fy_out, ddtheta, ddtheta_eq), Mtheta, 0))
 
-matlabFunction(formula(Fx_out), 'file', 'find_Fx_out.m', 'outputs', {'Fx_out'})
-matlabFunction(formula(Fy_out), 'file', 'find_Fy_out.m', 'outputs', {'Fy_out'})
+% matlabFunction(formula(Fx_out), 'file', 'find_Fx_out.m', 'outputs', {'Fx_out'})
+% matlabFunction(formula(Fy_out), 'file', 'find_Fy_out.m', 'outputs', {'Fy_out'})
 
 % job = createJob(c);
 % createTask(job, @matlabFunction, 1,{Fx_out, 'file', 'find_Fx_out.m', 'outputs', {'Fx_out'}});
@@ -79,7 +79,7 @@ matlabFunction(formula(Fy_out), 'file', 'find_Fy_out.m', 'outputs', {'Fy_out'})
 % submit(job)
 % job.Tasks
 
-dmomentumG = subs(dmomentumG, ddtheta, ddtheta_eq);
+dmomentumG = subs(dmomentumG, ddtheta, ddtheta_eq)
 
 
 
