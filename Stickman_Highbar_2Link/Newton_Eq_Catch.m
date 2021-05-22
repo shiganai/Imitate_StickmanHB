@@ -40,7 +40,7 @@ d_M = subs(d_M, [x_Wrist_Pre, y_Wrist_Pre], sym([0,0]));
 syms f_Wrist_Bar real
 syms tau_Hip
 
-f_Wrist_Bar_Eq = -functionalDerivative(L, l_Wrist_Bar_Pre);
+% f_Wrist_Bar_Eq = -functionalDerivative(L, l_Wrist_Bar_Pre);
 
 laglange_Eqs = [
     -functionalDerivative(L, l_Wrist_Bar_Pre) == f_Wrist_Bar;
@@ -52,12 +52,14 @@ syms l_Wrist_Bar dl_Wrist_Bar ddl_Wrist_Bar real
 syms th_Wrist dth_Wrist ddth_Wrist real
 syms th_Hip dth_Hip ddth_Hip real
 
-syms_Replaced = [l_Wrist_Bar_Pre, diff(l_Wrist_Bar_Pre,t), diff(l_Wrist_Bar_Pre,t,t), ...
+syms_Replaced = [
+    l_Wrist_Bar_Pre, diff(l_Wrist_Bar_Pre,t), diff(l_Wrist_Bar_Pre,t,t), ...
     th_Wrist_Pre, diff(th_Wrist_Pre,t), diff(th_Wrist_Pre,t,t), ...
     th_Hip_Pre, diff(th_Hip_Pre,t), diff(th_Hip_Pre,t,t), ...
     ];
 
-syms_Replacing = [l_Wrist_Bar, dl_Wrist_Bar, ddl_Wrist_Bar, ...
+syms_Replacing = [
+    l_Wrist_Bar, dl_Wrist_Bar, ddl_Wrist_Bar, ...
     th_Wrist, dth_Wrist, ddth_Wrist, ...
     th_Hip, dth_Hip, ddth_Hip, ...
     ];
@@ -66,7 +68,7 @@ laglange_Eqs = simplify(subs(laglange_Eqs, syms_Replaced, syms_Replacing));
 f_X = subs(f_X, syms_Replaced, syms_Replacing);
 f_Y = subs(f_Y, syms_Replaced, syms_Replacing);
 d_M = subs(d_M, syms_Replaced, syms_Replacing);
-f_Wrist_Bar_Eq = subs(f_Wrist_Bar_Eq, syms_Replaced, syms_Replacing);
+% f_Wrist_Bar_Eq = subs(f_Wrist_Bar_Eq, syms_Replaced, syms_Replacing);
 
 parallel.defaultClusterProfile('local');
 c = parcluster();
@@ -83,26 +85,20 @@ ddth_Wrist_Eq = simplify(X(2));
 ddth_Hip_Eq = simplify(X(3));
 
 % matlabFunction(ddl_Wrist_Bar_Eq, ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Catch.m', 'outputs', {'ddl_Wrist_Bar', 'ddth_Wrist', 'ddth_Hip'});
-matlabFunction(ddl_Wrist_Bar_Eq, ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Catch_Debbug.m', 'outputs', {'ddl_Wrist_Bar', 'ddth_Wrist', 'ddth_Hip'});
-
-%{
-job = createJob(c);
-createTask(job, @matlabFunction, 1,{ddl_Wrist_Bar_Eq, ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Catch.m', 'outputs', {'ddl_Wrist_Bar', 'ddth_Wrist', 'ddth_Hip'}});
-submit(job)
-job.Tasks
-%}
-
+% matlabFunction(ddl_Wrist_Bar_Eq, ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Catch_Debbug.m', 'outputs', {'ddl_Wrist_Bar', 'ddth_Wrist', 'ddth_Hip'});
 
 simplify(d_M(1) - f_X)
 simplify(d_M(2) - f_Y)
-simplify(subs(f_X, syms_Replacing, zeros(size(syms_Replacing))))
-simplify(subs(f_Y, syms_Replacing, zeros(size(syms_Replacing))))
+simplify(subs(f_X, syms_Replacing, zeros(size(syms_Replacing))));
+simplify(subs(f_Y, syms_Replacing, zeros(size(syms_Replacing))));
 
 f_X = subs(f_X, variables, X');
 f_Y = subs(f_Y, variables, X');
 
-matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Catch.m', 'outputs', {'f_X', 'f_Y'})
-matlabFunction(formula(f_Wrist_Bar_Eq), 'file', 'find_F_Wrist_Bar.m', 'outputs', {'f_Wrist_Bar'})
+% simplify(f_Wrist_Bar - (f_X * cos(th_Wrist) + f_Y * sin(th_Wrist)))
+
+% matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Catch.m', 'outputs', {'f_X', 'f_Y'})
+% matlabFunction(formula(f_Wrist_Bar_Eq), 'file', 'find_F_Wrist_Bar.m', 'outputs', {'f_Wrist_Bar'})
 
 
 
