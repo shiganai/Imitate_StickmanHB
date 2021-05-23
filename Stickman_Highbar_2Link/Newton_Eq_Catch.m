@@ -104,8 +104,8 @@ f_Wrist_Bar = subs(f_Wrist_Bar, variables, X');
 simplify(f_Wrist_Bar - (f_X * sin(th_Wrist) + f_Y * -cos(th_Wrist)))
 simplify(N_Wrist_Bar - (f_X * cos(th_Wrist) + f_Y * sin(th_Wrist)))
 
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddl_Wrist_Bar_Eq, formula(f_Wrist_Bar), 'file', 'find_dd_Catch.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddl_Wrist_Bar', 'f_Wrist_Bar'})
-% matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Catch.m', 'outputs', {'f_X', 'f_Y'})
+% matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddl_Wrist_Bar_Eq, formula(f_Wrist_Bar), 'file', 'find_dd_Catch.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddl_Wrist_Bar', 'f_Wrist_Bar'})
+matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Catch.m', 'outputs', {'f_X', 'f_Y'})
 
 simplify(subs(d_M, variables, X') - [f_X, f_Y])
 
