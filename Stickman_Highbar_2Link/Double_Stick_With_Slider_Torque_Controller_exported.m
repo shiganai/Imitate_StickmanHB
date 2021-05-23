@@ -14,14 +14,14 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         Status_Buttons            matlab.ui.container.ButtonGroup
         OnBarButton               matlab.ui.control.ToggleButton
         InAirButton               matlab.ui.control.ToggleButton
-        xLabel                    matlab.ui.control.Label
-        xSlider                   matlab.ui.control.Slider
-        dxSliderLabel             matlab.ui.control.Label
-        dxSlider                  matlab.ui.control.Slider
-        ySliderLabel              matlab.ui.control.Label
-        ySlider                   matlab.ui.control.Slider
-        dySliderLabel             matlab.ui.control.Label
-        dySlider                  matlab.ui.control.Slider
+        xGSliderLabel             matlab.ui.control.Label
+        xGSlider                  matlab.ui.control.Slider
+        dxGSliderLabel            matlab.ui.control.Label
+        dxGSlider                 matlab.ui.control.Slider
+        yGSliderLabel             matlab.ui.control.Label
+        yGSlider                  matlab.ui.control.Slider
+        dyGSliderLabel            matlab.ui.control.Label
+        dyGSlider                 matlab.ui.control.Slider
         WLabel                    matlab.ui.control.Label
         th_WristSlider            matlab.ui.control.Slider
         WLabel_2                  matlab.ui.control.Label
@@ -99,26 +99,58 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     methods (Access = private)
         
         function initialize_Data(app)
-            %{/
             app.StatusLabel.Text = app.Status_Buttons.SelectedObject.Text;
             
-            app.x_Wrist = app.Initialize_Data_Array(1);
-            app.dx_Wrist = app.Initialize_Data_Array(2);
-            
-            app.y_Wrist = app.Initialize_Data_Array(3);
-            app.dy_Wrist = app.Initialize_Data_Array(4);
-            
-            app.th_Wrist = deg2rad(app.Initialize_Data_Array(5));
-            app.dth_Wrist = app.Initialize_Data_Array(6);
-            
-            app.th_Hip = deg2rad(app.Initialize_Data_Array(7));
-            app.dth_Hip = app.Initialize_Data_Array(8);
+            if isequal(app.StatusLabel.Text, 'InAir')
+                
+                app.th_Wrist = deg2rad(app.Initialize_Data_Array(5));
+                app.dth_Wrist = app.Initialize_Data_Array(6);
+                
+                app.th_Hip = deg2rad(app.Initialize_Data_Array(7));
+                app.dth_Hip = app.Initialize_Data_Array(8);
+                
+                p_Wrist = [0,0];
+                p_Hip = p_Wrist + app.l_Body * [cos(app.th_Wrist + 1/2 * pi), sin(app.th_Wrist + 1/2 * pi)];
+                p_Toe = p_Hip + app.l_Leg * [cos(app.th_Wrist + 1/2 * pi + app.th_Hip), sin(app.th_Wrist + 1/2 * pi + app.th_Hip)];
+                
+                p_Body = 1/2 * (p_Wrist + p_Hip);
+                p_Leg = 1/2 * (p_Hip + p_Toe);
+                
+                p_G = (app.m_Body * p_Body + app.m_Leg * p_Leg)/(app.m_Body + app.m_Leg);
+                
+                v_Wrist = [0,0];
+                v_Hip = v_Wrist + app.l_Body * app.dth_Wrist * [-sin(app.th_Wrist + 1/2 * pi), cos(app.th_Wrist + 1/2 * pi)];
+                v_Toe = v_Hip + app.l_Leg * (app.dth_Wrist + app.dth_Hip) * ...
+                    [-sin(app.th_Wrist + 1/2 * pi + app.th_Hip), cos(app.th_Wrist + 1/2 * pi + app.th_Hip)];
+                
+                v_Body = 1/2 * (v_Wrist + v_Hip);
+                v_Leg = 1/2 * (v_Hip + v_Toe);
+                
+                v_G = (app.m_Body * v_Body + app.m_Leg * v_Leg)/(app.m_Body + app.m_Leg);
+                
+                app.x_Wrist = app.Initialize_Data_Array(1) - p_G(1);
+                app.dx_Wrist = app.Initialize_Data_Array(2) - v_G(1);
+                
+                app.y_Wrist = app.Initialize_Data_Array(3) - p_G(2);
+                app.dy_Wrist = app.Initialize_Data_Array(4) - v_G(2);
+            elseif isequal(app.StatusLabel.Text, 'OnBar')
+                app.x_Wrist = 0;
+                app.dx_Wrist = 0;
+                
+                app.y_Wrist = 0;
+                app.dy_Wrist = 0;
+                
+                app.th_Wrist = deg2rad(app.Initialize_Data_Array(5));
+                app.dth_Wrist = app.Initialize_Data_Array(6);
+                
+                app.th_Hip = deg2rad(app.Initialize_Data_Array(7));
+                app.dth_Hip = app.Initialize_Data_Array(8);
+            end
             
             [x_Cross, y_Cross] = calc_Cross(app, app.th_Wrist, app.x_Wrist, app.y_Wrist);
             
             app.l_Wrist_Bar = vecnorm([x_Cross, y_Cross] - [app.x_Wrist, app.y_Wrist]);
             app.dl_Wrist_Bar = -app.dx_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.dy_Wrist * sin(app.th_Wrist + 1/2 * pi);
-            %}
             
             %{
             app.StatusLabel.Text = 'OnBar';
@@ -1500,10 +1532,10 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         function startupFcn(app)
             
             app.Initialize_Data_Array = [
-                app.xSlider.Value;
-                app.dxSlider.Value;
-                app.ySlider.Value;
-                app.dySlider.Value;
+                app.xGSlider.Value;
+                app.dxGSlider.Value;
+                app.yGSlider.Value;
+                app.dyGSlider.Value;
                 app.th_WristSlider.Value;
                 app.dth_WristSlider.Value;
                 app.th_HipSlider.Value;
@@ -1534,15 +1566,27 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             hold(app.UIAxes, "off")
             
             app.slider_Positions = [
-                app.xSlider.Position;
-                app.dxSlider.Position;
-                app.ySlider.Position;
-                app.dySlider.Position;
+                app.xGSlider.Position;
+                app.dxGSlider.Position;
+                app.yGSlider.Position;
+                app.dyGSlider.Position;
                 app.th_WristSlider.Position;
                 app.dth_WristSlider.Position;
                 app.th_HipSlider.Position;
                 app.dth_HipSlider.Position;
                 ];
+            
+            if isequal(app.Status_Buttons.SelectedObject.Text, 'InAir')
+                app.xGSlider.Visible = 'on';
+                app.dxGSlider.Visible = 'on';
+                app.yGSlider.Visible = 'on';
+                app.dyGSlider.Visible = 'on';
+            elseif isequal(app.Status_Buttons.SelectedObject.Text, 'OnBar')
+                app.xGSlider.Visible = 'off';
+                app.dxGSlider.Visible = 'off';
+                app.yGSlider.Visible = 'off';
+                app.dyGSlider.Visible = 'off';
+            end
         end
 
         % Value changed function: PlayingButton
@@ -1608,10 +1652,12 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
         % Button pushed function: Take_OffButton
         function Take_OffButtonPushed(app, event)
-            app.status = 'Inair';
+            app.StatusLabel.Text = 'InAir';
         end
 
-        % Value changing function: xSlider
+        % Value changing function: dth_HipSlider, dth_WristSlider, 
+        % dxGSlider, dyGSlider, th_HipSlider, th_WristSlider, 
+        % xGSlider, yGSlider
         function Initialize_Data_SliderValueChanging(app, event)
             changingValue = event.Value;
             if ~app.PlayingButton.Value
@@ -1623,6 +1669,22 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                 initialize_Data(app)
                 refresh_Stick(app)
                 drawnow
+            end
+        end
+
+        % Selection changed function: Status_Buttons
+        function Status_ButtonsSelectionChanged(app, event)
+            selectedButton = app.Status_Buttons.SelectedObject;
+            if isequal(selectedButton.Text, 'InAir')
+                app.xGSlider.Visible = 'on';
+                app.dxGSlider.Visible = 'on';
+                app.yGSlider.Visible = 'on';
+                app.dyGSlider.Visible = 'on';
+            elseif isequal(selectedButton.Text, 'OnBar')
+                app.xGSlider.Visible = 'off';
+                app.dxGSlider.Visible = 'off';
+                app.yGSlider.Visible = 'off';
+                app.dyGSlider.Visible = 'off';
             end
         end
     end
@@ -1692,6 +1754,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create Status_Buttons
             app.Status_Buttons = uibuttongroup(app.InitializationPanel);
+            app.Status_Buttons.SelectionChangedFcn = createCallbackFcn(app, @Status_ButtonsSelectionChanged, true);
             app.Status_Buttons.BorderType = 'none';
             app.Status_Buttons.Position = [10 194 187 44];
 
@@ -1706,54 +1769,57 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.InAirButton.Text = 'InAir';
             app.InAirButton.Position = [100 11 86 22];
 
-            % Create xLabel
-            app.xLabel = uilabel(app.InitializationPanel);
-            app.xLabel.HorizontalAlignment = 'right';
-            app.xLabel.Position = [1 169 25 22];
-            app.xLabel.Text = 'x';
+            % Create xGSliderLabel
+            app.xGSliderLabel = uilabel(app.InitializationPanel);
+            app.xGSliderLabel.HorizontalAlignment = 'right';
+            app.xGSliderLabel.Position = [1 169 25 22];
+            app.xGSliderLabel.Text = 'xG';
 
-            % Create xSlider
-            app.xSlider = uislider(app.InitializationPanel);
-            app.xSlider.Limits = [-1 1];
-            app.xSlider.MajorTicks = [];
-            app.xSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
-            app.xSlider.Position = [47 178 150 3];
+            % Create xGSlider
+            app.xGSlider = uislider(app.InitializationPanel);
+            app.xGSlider.Limits = [-1 1];
+            app.xGSlider.MajorTicks = [];
+            app.xGSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
+            app.xGSlider.Position = [47 178 150 3];
 
-            % Create dxSliderLabel
-            app.dxSliderLabel = uilabel(app.InitializationPanel);
-            app.dxSliderLabel.HorizontalAlignment = 'right';
-            app.dxSliderLabel.Position = [1 146 25 22];
-            app.dxSliderLabel.Text = 'dx';
+            % Create dxGSliderLabel
+            app.dxGSliderLabel = uilabel(app.InitializationPanel);
+            app.dxGSliderLabel.HorizontalAlignment = 'right';
+            app.dxGSliderLabel.Position = [-2 146 28 22];
+            app.dxGSliderLabel.Text = 'dxG';
 
-            % Create dxSlider
-            app.dxSlider = uislider(app.InitializationPanel);
-            app.dxSlider.Limits = [-1 1];
-            app.dxSlider.MajorTicks = [];
-            app.dxSlider.Position = [47 155 150 3];
+            % Create dxGSlider
+            app.dxGSlider = uislider(app.InitializationPanel);
+            app.dxGSlider.Limits = [-3 3];
+            app.dxGSlider.MajorTicks = [];
+            app.dxGSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
+            app.dxGSlider.Position = [47 155 150 3];
 
-            % Create ySliderLabel
-            app.ySliderLabel = uilabel(app.InitializationPanel);
-            app.ySliderLabel.HorizontalAlignment = 'right';
-            app.ySliderLabel.Position = [1 123 25 22];
-            app.ySliderLabel.Text = 'y';
+            % Create yGSliderLabel
+            app.yGSliderLabel = uilabel(app.InitializationPanel);
+            app.yGSliderLabel.HorizontalAlignment = 'right';
+            app.yGSliderLabel.Position = [1 123 25 22];
+            app.yGSliderLabel.Text = 'yG';
 
-            % Create ySlider
-            app.ySlider = uislider(app.InitializationPanel);
-            app.ySlider.Limits = [-1 1];
-            app.ySlider.MajorTicks = [];
-            app.ySlider.Position = [47 132 150 3];
+            % Create yGSlider
+            app.yGSlider = uislider(app.InitializationPanel);
+            app.yGSlider.Limits = [-1 1];
+            app.yGSlider.MajorTicks = [];
+            app.yGSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
+            app.yGSlider.Position = [47 132 150 3];
 
-            % Create dySliderLabel
-            app.dySliderLabel = uilabel(app.InitializationPanel);
-            app.dySliderLabel.HorizontalAlignment = 'right';
-            app.dySliderLabel.Position = [1 100 25 22];
-            app.dySliderLabel.Text = 'dy';
+            % Create dyGSliderLabel
+            app.dyGSliderLabel = uilabel(app.InitializationPanel);
+            app.dyGSliderLabel.HorizontalAlignment = 'right';
+            app.dyGSliderLabel.Position = [-2 100 28 22];
+            app.dyGSliderLabel.Text = 'dyG';
 
-            % Create dySlider
-            app.dySlider = uislider(app.InitializationPanel);
-            app.dySlider.Limits = [-1 1];
-            app.dySlider.MajorTicks = [];
-            app.dySlider.Position = [47 109 150 3];
+            % Create dyGSlider
+            app.dyGSlider = uislider(app.InitializationPanel);
+            app.dyGSlider.Limits = [-3 3];
+            app.dyGSlider.MajorTicks = [];
+            app.dyGSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
+            app.dyGSlider.Position = [47 109 150 3];
 
             % Create WLabel
             app.WLabel = uilabel(app.InitializationPanel);
@@ -1763,8 +1829,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create th_WristSlider
             app.th_WristSlider = uislider(app.InitializationPanel);
-            app.th_WristSlider.Limits = [-1 1];
+            app.th_WristSlider.Limits = [-180 180];
             app.th_WristSlider.MajorTicks = [];
+            app.th_WristSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
             app.th_WristSlider.Position = [47 86 150 3];
 
             % Create WLabel_2
@@ -1775,8 +1842,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create dth_WristSlider
             app.dth_WristSlider = uislider(app.InitializationPanel);
-            app.dth_WristSlider.Limits = [-1 1];
+            app.dth_WristSlider.Limits = [-3 3];
             app.dth_WristSlider.MajorTicks = [];
+            app.dth_WristSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
             app.dth_WristSlider.Position = [47 63 150 3];
 
             % Create HLabel
@@ -1787,8 +1855,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create th_HipSlider
             app.th_HipSlider = uislider(app.InitializationPanel);
-            app.th_HipSlider.Limits = [-1 1];
+            app.th_HipSlider.Limits = [-90 90];
             app.th_HipSlider.MajorTicks = [];
+            app.th_HipSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
             app.th_HipSlider.Position = [47 40 150 3];
 
             % Create HLabel_2
@@ -1799,8 +1868,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create dth_HipSlider
             app.dth_HipSlider = uislider(app.InitializationPanel);
-            app.dth_HipSlider.Limits = [-1 1];
+            app.dth_HipSlider.Limits = [-3 3];
             app.dth_HipSlider.MajorTicks = [];
+            app.dth_HipSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
             app.dth_HipSlider.Position = [47 16 150 3];
 
             % Create StatusLabel
