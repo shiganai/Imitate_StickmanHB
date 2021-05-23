@@ -3,13 +3,35 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                  matlab.ui.Figure
-        PlayingButton             matlab.ui.control.StateButton
-        Slider                    matlab.ui.control.Slider
-        ResetButton               matlab.ui.control.StateButton
-        FrameButton               matlab.ui.control.Button
-        PlaySpeedxEditFieldLabel  matlab.ui.control.Label
-        PlaySpeedxEditField       matlab.ui.control.NumericEditField
+        GridLayout                matlab.ui.container.GridLayout
+        StatusLabel               matlab.ui.control.Label
+        DataInitializationPanel   matlab.ui.container.Panel
         Take_OffButton            matlab.ui.control.Button
+        FrameButton               matlab.ui.control.Button
+        ResetButton               matlab.ui.control.StateButton
+        Slider                    matlab.ui.control.Slider
+        PlaySpeedxEditField       matlab.ui.control.NumericEditField
+        PlaySpeedxEditFieldLabel  matlab.ui.control.Label
+        PlayingButton             matlab.ui.control.StateButton
+        xSliderLabel              matlab.ui.control.Label
+        xSlider                   matlab.ui.control.Slider
+        dxSliderLabel             matlab.ui.control.Label
+        dxSlider                  matlab.ui.control.Slider
+        ySliderLabel              matlab.ui.control.Label
+        ySlider                   matlab.ui.control.Slider
+        dySliderLabel             matlab.ui.control.Label
+        dySlider                  matlab.ui.control.Slider
+        th_WristSliderLabel       matlab.ui.control.Label
+        th_WristSlider            matlab.ui.control.Slider
+        dth_WristSliderLabel      matlab.ui.control.Label
+        dth_WristSlider           matlab.ui.control.Slider
+        th_HipSliderLabel         matlab.ui.control.Label
+        th_HipSlider              matlab.ui.control.Slider
+        dth_HipSliderLabel        matlab.ui.control.Label
+        dth_HipSlider             matlab.ui.control.Slider
+        Status_Buttons            matlab.ui.container.ButtonGroup
+        InAirButton               matlab.ui.control.ToggleButton
+        OnBarButton               matlab.ui.control.ToggleButton
         UIAxes                    matlab.ui.control.UIAxes
     end
 
@@ -41,7 +63,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         f_X = 0
         f_Y = 0
         
-        status char
+        %         status char
         
         time_step = 0.01
         
@@ -50,6 +72,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         
         quivers matlab.graphics.chart.primitive.Quiver
         quiver_Ratio double
+        
+        slider_Positions double
+        Initialize_Data_Array double
         
         tau_M_0_Ext = 1 % 正
         theta_A_0_Ext = 42
@@ -76,26 +101,28 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         
         function initialize_Data(app)
             %{/
-            app.status = 'Inair';
+            app.StatusLabel.Text = app.Status_Buttons.SelectedObject.Text;
             
-            app.l_Wrist_Bar = -0.1;
-            app.dl_Wrist_Bar = 0;
+            app.x_Wrist = app.Initialize_Data_Array(1);
+            app.dx_Wrist = app.Initialize_Data_Array(2);
             
-            app.th_Wrist = 3/4 * pi;
-            app.dth_Wrist = 1;
+            app.y_Wrist = app.Initialize_Data_Array(3);
+            app.dy_Wrist = app.Initialize_Data_Array(4);
             
-            app.th_Hip = 0/2 * pi;
-            app.dth_Hip = 0;
+            app.th_Wrist = deg2rad(app.Initialize_Data_Array(5));
+            app.dth_Wrist = app.Initialize_Data_Array(6);
             
-            app.x_Wrist = -app.l_Wrist_Bar * cos(app.th_Wrist + 1/2 * pi);
-            app.dx_Wrist = app.l_Wrist_Bar * app.dth_Wrist * sin(app.th_Wrist + 1/2 * pi) - app.dl_Wrist_Bar * cos(app.th_Wrist + 1/2 * pi);
+            app.th_Hip = deg2rad(app.Initialize_Data_Array(7));
+            app.dth_Hip = app.Initialize_Data_Array(8);
             
-            app.y_Wrist = -app.l_Wrist_Bar * sin(app.th_Wrist + 1/2 * pi) + 0.5;
-            app.dy_Wrist = -app.l_Wrist_Bar * app.dth_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.dl_Wrist_Bar * sin(app.th_Wrist + 1/2 * pi);
+            [x_Cross, y_Cross] = calc_Cross(app, app.th_Wrist, app.x_Wrist, app.y_Wrist);
+            
+            app.l_Wrist_Bar = vecnorm([x_Cross, y_Cross] - [app.x_Wrist, app.y_Wrist]);
+            app.dl_Wrist_Bar = -app.dx_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.dy_Wrist * sin(app.th_Wrist + 1/2 * pi);
             %}
             
             %{
-            app.status = 'Onbar';
+            app.StatusLabel.Text = 'OnBar';
             
             app.l_Wrist_Bar = 0;
             
@@ -134,22 +161,21 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function refresh_Quivers(app)
-            if isequal(app.status, 'Onbar')
+            if isequal(app.StatusLabel.Text, 'OnBar')
                 [app.f_X,app.f_Y] = find_F_Onbar(app.dth_Hip,app.dth_Wrist,app.g,app.l_Body,app.l_Leg,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.tau_Hip,app.th_Hip,app.th_Wrist);
-            elseif isequal(app.status, 'Inair')
+            elseif isequal(app.StatusLabel.Text, 'InAir')
                 app.f_X = 0;
                 app.f_Y = 0;
-            elseif isequal(app.status, 'Catch')
+            elseif isequal(app.StatusLabel.Text, 'Catch')
                 [app.f_X,app.f_Y] = find_F_Catch(app.dl_Wrist_Bar,app.dth_Hip,app.dth_Wrist,app.g,...
                     app.l_Body,app.l_Leg,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.myu,app.tau_Hip,app.th_Hip,app.th_Wrist);
                 
                 f_Wrist_Bar = app.f_X * sin(app.th_Wrist) + app.f_Y * -cos(app.th_Wrist);
                 
                 if sign(f_Wrist_Bar) ~= sign(app.dl_Wrist_Bar)
+                    app.myu = -app.myu;
                     [app.f_X,app.f_Y] = find_F_Catch(app.dl_Wrist_Bar,app.dth_Hip,app.dth_Wrist,app.g,...
-                        app.l_Body,app.l_Leg,app.l_Wrist_Bar,app.m_Body,app.m_Leg,-app.myu,app.tau_Hip,app.th_Hip,app.th_Wrist);
-                    
-                    f_Wrist_Bar = app.f_X * sin(app.th_Wrist) + app.f_Y * -cos(app.th_Wrist);
+                        app.l_Body,app.l_Leg,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.myu,app.tau_Hip,app.th_Hip,app.th_Wrist);
                 end
             end
             app.quivers(1).UData = app.f_X / app.quiver_Ratio;
@@ -157,12 +183,14 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function run_Ode(app)
-            if isequal(app.status, 'Onbar')
+            if isequal(app.StatusLabel.Text, 'OnBar')
                 run_Ode_Onbar(app)
-            elseif isequal(app.status, 'Inair')
+            elseif isequal(app.StatusLabel.Text, 'InAir')
                 run_Ode_Inair(app)
-            elseif isequal(app.status, 'Catch')
+            elseif isequal(app.StatusLabel.Text, 'Catch')
                 run_Ode_Catch(app)
+            elseif isequal(app.StatusLabel.Text, 'Failed')
+                initialize_Data(app)
             else
                 error('The status has not been determined')
             end
@@ -183,6 +211,150 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.dx_Wrist = app.l_Wrist_Bar * app.dth_Wrist * sin(app.th_Wrist + 1/2 * pi);
             app.y_Wrist = -app.l_Wrist_Bar * sin(app.th_Wrist + 1/2 * pi);
             app.dy_Wrist = -app.l_Wrist_Bar * app.dth_Wrist * cos(app.th_Wrist + 1/2 * pi);
+        end
+        
+        function run_Ode_Inair(app)
+            t = [0, app.time_step];
+            
+            q0 = [app.th_Wrist, app.dth_Wrist, app.th_Hip, app.dth_Hip, app.x_Wrist, app.dx_Wrist, app.y_Wrist, app.dy_Wrist]';
+            ode_Event = @(t,q) event_Inair(app, q);
+            ode_Options = odeset('Events', ode_Event);
+            [time, q, te, ~, ie] = ode45(@(t,q) ddt_Inair(app, q), t, q0, ode_Options);
+            
+            app.th_Wrist = q(end,1);
+            app.dth_Wrist = q(end,2);
+            app.th_Hip = q(end,3);
+            app.dth_Hip = q(end,4);
+            app.x_Wrist = q(end,5);
+            app.dx_Wrist = q(end,6);
+            app.y_Wrist = q(end,7);
+            app.dy_Wrist = q(end,8);
+            
+            if ~isempty(ie)
+                if time(end) == te(end)
+                    if ie(end) == 1
+                        app.StatusLabel.Text = 'Catch';
+                        
+                        [x_Cross, y_Cross] = calc_Cross(app, app.th_Wrist, app.x_Wrist, app.y_Wrist);
+                        
+                        app.l_Wrist_Bar = vecnorm([x_Cross, y_Cross] - [app.x_Wrist, app.y_Wrist]);
+                        
+                        app.dl_Wrist_Bar = -app.dx_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.dy_Wrist * sin(app.th_Wrist + 1/2 * pi);
+                        
+                        dl_N_Wrist_Bar = app.dx_Wrist * sin(app.th_Wrist + 1/2 * pi) - app.dy_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.l_Wrist_Bar * app.dth_Wrist;
+                        
+                        [dth_Wrist_After,dth_Hip_After,dl_Wrist_Bar_After,I_N_Wrist_Bar] = ...
+                            find_Status_After_Collision(app.dl_Wrist_Bar,dl_N_Wrist_Bar,app.dth_Hip,app.dth_Wrist,...
+                            app.l_Body,app.l_Leg, 0,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.myu,app.th_Hip);
+                        
+                        if sign(dl_N_Wrist_Bar) ~= sign(I_N_Wrist_Bar)
+                            app.myu = -app.myu;
+                            [dth_Wrist_After,dth_Hip_After,dl_Wrist_Bar_After] = ...
+                                find_Status_After_Collision(app.dl_Wrist_Bar,dl_N_Wrist_Bar,app.dth_Hip,app.dth_Wrist,...
+                                app.l_Body,app.l_Leg, 0,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.myu,app.th_Hip);
+                        end
+                        app.dth_Wrist = dth_Wrist_After;
+                        app.dth_Hip = dth_Hip_After;
+                        app.dl_Wrist_Bar = dl_Wrist_Bar_After;
+                    elseif ie(end) == 2
+                        app.StatusLabel.Text = 'Failed';
+                        
+                        app.PlayingButton.Value = false;
+                    end
+                end
+            end
+        end
+        
+        function [value,isterminal,direction] = event_Inair(app, q)
+            
+            th_Wrist_Tmp = q(1);
+            th_Hip_Tmp = q(3);
+            
+            x_Wrist_Tmp = q(5);
+            y_Wrist_Tmp = q(7);
+            
+            [x_Cross, y_Cross] = calc_Cross(app, th_Wrist_Tmp, x_Wrist_Tmp, y_Wrist_Tmp);
+            
+            l_Wrist_Bar_Tmp = ([x_Cross, y_Cross] - [x_Wrist_Tmp, y_Wrist_Tmp]) ./ [cos(th_Wrist_Tmp + 1/2 * pi), sin(th_Wrist_Tmp + 1/2 * pi)];
+            
+            cross_Vec = [cos(th_Wrist_Tmp), sin(th_Wrist_Tmp)];
+            l_N_Wrist_Bar_Tmp = [x_Cross, y_Cross] ./ cross_Vec;
+            
+            % To check if calc is correct, but not installed
+            %{
+            if abs(x_Cross * cos(th_Wrist_Tmp) - y_Cross * sin(th_Wrist_Tmp)) < 1e-1
+                l_N_Wrist_Bar_Tmp = [x_Cross, y_Cross] ./ cross_Vec;
+            else
+                error('l_N_Wrist_Bar is not calculated correctly')
+            end
+            %}
+            
+            value(1) = l_N_Wrist_Bar_Tmp(1);
+            direction(1) = 0;
+            if l_Wrist_Bar_Tmp(1) > 0 && l_Wrist_Bar_Tmp(1) < app.l_Body
+                isterminal(1) = 1;
+            else
+                isterminal(1) = 0;
+            end
+            
+            y0 = y_Wrist_Tmp;
+            y1 = y0 + app.l_Body * sin(th_Wrist_Tmp + 1/2 * pi);
+            y2 = y1 + app.l_Leg * sin(th_Wrist_Tmp + 1/2 * pi + th_Hip_Tmp);
+            
+            value(2) = (app.m_Body * (y0 + y1)/2 + app.m_Leg * (y1 + y2)/2)/(app.m_Body + app.m_Leg) - (-app.l_Body - app.l_Leg);
+            direction(2) = 0;
+            isterminal(2) = 1;
+        end
+        
+        function run_Ode_Catch(app)
+            t = [0, app.time_step];
+            
+            q0 = [app.th_Wrist, app.dth_Wrist, app.th_Hip, app.dth_Hip, app.l_Wrist_Bar, app.dl_Wrist_Bar]';
+            ode_Event = @(t,q) event_Catch(app, q);
+            ode_Options = odeset('Events', ode_Event);
+            [~, q, ~, ~, ie] = ode45(@(t,q) ddt_Catch(app, q), t, q0, ode_Options);
+            
+            app.th_Wrist = q(end,1);
+            app.dth_Wrist = q(end,2);
+            app.th_Hip = q(end,3);
+            app.dth_Hip = q(end,4);
+            app.l_Wrist_Bar = q(end,5);
+            app.dl_Wrist_Bar = q(end,6);
+            
+            app.x_Wrist = -app.l_Wrist_Bar * cos(app.th_Wrist + 1/2 * pi);
+            app.dx_Wrist = app.l_Wrist_Bar * app.dth_Wrist * sin(app.th_Wrist + 1/2 * pi);
+            app.y_Wrist = -app.l_Wrist_Bar * sin(app.th_Wrist + 1/2 * pi);
+            app.dy_Wrist = -app.l_Wrist_Bar * app.dth_Wrist * cos(app.th_Wrist + 1/2 * pi);
+            
+            if ~isempty(ie)
+                if ie(end) == 1
+                    app.StatusLabel.Text = 'OnBar';
+                    
+                    [dth_Wrist_After,dth_Hip_After] = ...
+                        find_Status_After_Slides_Collision(app.dl_Wrist_Bar,app.dth_Hip,app.dth_Wrist,...
+                        app.l_Body,app.l_Leg,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.th_Hip);
+                    
+                    app.dth_Wrist = dth_Wrist_After;
+                    app.dth_Hip = dth_Hip_After;
+                elseif ie(end) == 2
+                    app.StatusLabel.Text = 'failed';
+                    
+                    app.PlayingButton.Value = false;
+                end
+            end
+        end
+        
+        function [value,isterminal,direction] = event_Catch(app, q)
+            l_Wrist_Bar_Tmp = q(5);
+            %             dl_Wrist_Bar_Tmp = q(6);
+            
+            value(1) = l_Wrist_Bar_Tmp;
+            isterminal(1) = 1;
+            direction(1) = 0;
+            
+            value(2) = l_Wrist_Bar_Tmp - app.l_Body;
+            isterminal(2) = 1;
+            direction(2) = 0;
         end
         
         function dotq = ddt_Onbar(app, q)
@@ -206,54 +378,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             [ddth_Wrist,ddth_Hip] = find_dd_Onbar(dth_Hip_Tmp,dth_Wrist_Tmp,app.g,app.l_Body,app.l_Leg,app.l_Wrist_Bar,app.m_Body,app.m_Leg,tau_Hip_Tmp,th_Hip_Tmp,th_Wrist_Tmp);
             
             dotq = [dth_Wrist_Tmp, ddth_Wrist, dth_Hip_Tmp, ddth_Hip]';
-        end
-        
-        function run_Ode_Inair(app)
-            t = [0, app.time_step];
-            
-            q0 = [app.th_Wrist, app.dth_Wrist, app.th_Hip, app.dth_Hip, app.x_Wrist, app.dx_Wrist, app.y_Wrist, app.dy_Wrist]';
-            ode_Event = @(t,q) event_Inair(app, q);
-            ode_Options = odeset('Events', ode_Event);
-            [time, q, te, ~, ie] = ode45(@(t,q) ddt_Inair(app, q), t, q0, ode_Options);
-            
-            app.th_Wrist = q(end,1);
-            app.dth_Wrist = q(end,2);
-            app.th_Hip = q(end,3);
-            app.dth_Hip = q(end,4);
-            app.x_Wrist = q(end,5);
-            app.dx_Wrist = q(end,6);
-            app.y_Wrist = q(end,7);
-            app.dy_Wrist = q(end,8);
-            
-            if ~isempty(ie)
-                if time(end) == te(end)
-                    if ie(end) == 1
-                        app.status = 'Catch';
-                        
-                        [x_Cross, y_Cross] = calc_Cross(app, app.th_Wrist, app.x_Wrist, app.y_Wrist);
-                        
-                        app.l_Wrist_Bar = vecnorm([x_Cross, y_Cross] - [app.x_Wrist, app.y_Wrist]);
-                        
-                        app.dl_Wrist_Bar = -app.dx_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.dy_Wrist * sin(app.th_Wrist + 1/2 * pi);
-                        
-                        dl_N_Wrist_Bar = app.dx_Wrist * sin(app.th_Wrist + 1/2 * pi) - app.dy_Wrist * cos(app.th_Wrist + 1/2 * pi) - app.l_Wrist_Bar * app.dth_Wrist;
-                        
-                        [dth_Wrist_After,dth_Hip_After,dl_Wrist_Bar_After,I_N_Wrist_Bar] = ...
-                            find_Status_After_Collision(app.dl_Wrist_Bar,dl_N_Wrist_Bar,app.dth_Hip,app.dth_Wrist,...
-                            app.l_Body,app.l_Leg, 0,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.myu,app.th_Hip);
-                        
-                        if sign(dl_N_Wrist_Bar) ~= sign(I_N_Wrist_Bar)
-                            app.myu = -app.myu;
-                            [dth_Wrist_After,dth_Hip_After,dl_Wrist_Bar_After] = ...
-                                find_Status_After_Collision(app.dl_Wrist_Bar,dl_N_Wrist_Bar,app.dth_Hip,app.dth_Wrist,...
-                                app.l_Body,app.l_Leg, 0,app.l_Wrist_Bar,app.m_Body,app.m_Leg,app.myu,app.th_Hip);
-                        end
-                        app.dth_Wrist = dth_Wrist_After;
-                        app.dth_Hip = dth_Hip_After;
-                        app.dl_Wrist_Bar = dl_Wrist_Bar_After;
-                    end
-                end
-            end
         end
         
         function dotq = ddt_Inair(app, q)
@@ -280,82 +404,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             [ddth_Wrist,ddth_Hip,ddx,ddy] = find_dd_Inair(dth_Hip_Tmp,dth_Wrist_Tmp,app.g,app.l_Body,app.l_Leg,app.m_Body,app.m_Leg,tau_Hip_Tmp,th_Hip_Tmp,th_Wrist_Tmp);
             
             dotq = [dth_Wrist_Tmp, ddth_Wrist, dth_Hip_Tmp, ddth_Hip, dx_Wrist_Tmp, ddx, dy_Wrist_Tmp, ddy]';
-        end
-        
-        function [value,isterminal,direction] = event_Inair(app, q)
-            
-            th_Wrist_Tmp = q(1);
-            
-            x_Wrist_Tmp = q(5);
-            y_Wrist_Tmp = q(7);
-            
-            [x_Cross, y_Cross] = calc_Cross(app, th_Wrist_Tmp, x_Wrist_Tmp, y_Wrist_Tmp);
-            
-            l_Wrist_Bar_Tmp = vecnorm([x_Cross, y_Cross] - [x_Wrist_Tmp, y_Wrist_Tmp]);
-            
-            cross_Vec = [cos(th_Wrist_Tmp), sin(th_Wrist_Tmp)];
-            l_N_Wrist_Bar_Tmp = [x_Cross, y_Cross] / cross_Vec;
-            
-            % To check if calc is correct, but not installed
-            %{
-            if abs(x_Cross * cos(th_Wrist_Tmp) - y_Cross * sin(th_Wrist_Tmp)) < 1e-1
-                l_N_Wrist_Bar_Tmp = [x_Cross, y_Cross] ./ cross_Vec;
-            else
-                error('l_N_Wrist_Bar is not calculated correctly')
-            end
-            %}
-            
-            value = l_N_Wrist_Bar_Tmp;
-            direction = 0;
-            if l_Wrist_Bar_Tmp > 0 && l_Wrist_Bar_Tmp < app.l_Body
-                isterminal = 1;
-            else
-                isterminal = 0;
-            end
-            
-            %{
-            p_Wrist_Tmp = [x_Wrist_Tmp, y_Wrist_Tmp];
-            p_Hip_Tmp = x_Wrist_Tmp + app.l_Body * [cos(th_Wrist_Tmp + 1/2 * pi), sin(th_Wrist_Tmp + 1/2 * pi)];
-            p_Cross = [x_Cross, y_Cross];
-            
-            value = vecnorm(p_Cross) * sign(p_Cross(2));
-            direction = -1;
-            if x_Cross > p_Wrist_Tmp(1) && x_Cross < p_Hip_Tmp(1)
-                isterminal = 1;
-            elseif x_Cross < p_Wrist_Tmp(1) && x_Cross > p_Hip_Tmp(1)
-                isterminal = 1;
-            else
-                isterminal = 0;
-            end
-            %}
-            
-        end
-        
-        function run_Ode_Catch(app)
-            t = [0, app.time_step];
-            
-            q0 = [app.th_Wrist, app.dth_Wrist, app.th_Hip, app.dth_Hip, app.l_Wrist_Bar, app.dl_Wrist_Bar]';
-            ode_Event = @(t,q) event_Catch(app, q);
-            ode_Options = odeset('Events', ode_Event);
-            [~, q, ~, ~, ie] = ode45(@(t,q) ddt_Catch(app, q), t, q0, ode_Options);
-            
-            app.th_Wrist = q(end,1);
-            app.dth_Wrist = q(end,2);
-            app.th_Hip = q(end,3);
-            app.dth_Hip = q(end,4);
-            app.l_Wrist_Bar = q(end,5);
-            app.dl_Wrist_Bar = q(end,6);
-            
-            app.x_Wrist = -app.l_Wrist_Bar * cos(app.th_Wrist + 1/2 * pi);
-            app.dx_Wrist = app.l_Wrist_Bar * app.dth_Wrist * sin(app.th_Wrist + 1/2 * pi);
-            app.y_Wrist = -app.l_Wrist_Bar * sin(app.th_Wrist + 1/2 * pi);
-            app.dy_Wrist = -app.l_Wrist_Bar * app.dth_Wrist * cos(app.th_Wrist + 1/2 * pi);
-            
-            if ~isempty(ie)
-                if ie(end) == 1
-                    app.status = 'Onbar';
-                end
-            end
         end
         
         function dotq = ddt_Catch(app, q)
@@ -392,15 +440,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             end
             
             dotq = [dth_Wrist_Tmp, ddth_Wrist, dth_Hip_Tmp, ddth_Hip, dl_Wrist_Bar_Tmp, ddl_Wrist_Bar]';
-        end
-        
-        function [value,isterminal,direction] = event_Catch(~, q)
-            l_Wrist_Bar_Tmp = q(5);
-            %             dl_Wrist_Bar_Tmp = q(6);
-            
-            value = l_Wrist_Bar_Tmp;
-            isterminal = 1;
-            direction = 0;
         end
         
         function [x_Cross, y_Cross]= calc_Cross(~, th_Wrist_Tmp, x_Wrist_Tmp, y_Wrist_Tmp)
@@ -1415,14 +1454,61 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             end
         end
         
+        function [dth_Wrist_After,dth_Hip_After,I_F_Wrist_Bar] = find_Status_After_Slides_Collision(dl_Wrist_Bar_Before,dth_Hip_Before,dth_Wrist_Before,l_Body,l_Leg,l_Wrist_Bar,m_Body,m_Leg,th_Hip)
+            t2 = cos(th_Hip);
+            t3 = sin(th_Hip);
+            t4 = l_Body.^2;
+            t5 = l_Wrist_Bar.^2;
+            t6 = m_Body.^2;
+            t7 = m_Leg.^2;
+            t8 = th_Hip.*2.0;
+            t12 = l_Body.*l_Wrist_Bar.*m_Body.*2.4e+1;
+            t13 = l_Body.*l_Wrist_Bar.*m_Leg.*3.0e+1;
+            t9 = cos(t8);
+            t10 = t2.^2;
+            t11 = sin(t8);
+            t14 = m_Body.*t4.*8.0;
+            t15 = m_Leg.*t4.*1.5e+1;
+            t16 = m_Body.*t5.*2.4e+1;
+            t17 = m_Leg.*t5.*1.5e+1;
+            t18 = -t12;
+            t19 = -t13;
+            t20 = l_Body.*l_Wrist_Bar.*m_Leg.*t9.*1.8e+1;
+            t21 = m_Leg.*t4.*t9.*9.0;
+            t22 = m_Leg.*t5.*t9.*9.0;
+            t23 = -t21;
+            t24 = -t22;
+            t25 = t14+t15+t16+t17+t18+t19+t20+t23+t24;
+            t26 = 1.0./t25;
+            dth_Wrist_After = t26.*(dth_Wrist_Before.*t14+dth_Wrist_Before.*t15+dth_Wrist_Before.*t16+dth_Wrist_Before.*t17+dth_Wrist_Before.*t20-dth_Wrist_Before.*l_Body.*l_Wrist_Bar.*m_Body.*2.4e+1-dth_Wrist_Before.*l_Body.*l_Wrist_Bar.*m_Leg.*3.0e+1-dl_Wrist_Bar_Before.*l_Body.*m_Leg.*t11.*9.0+dl_Wrist_Bar_Before.*l_Wrist_Bar.*m_Leg.*t11.*9.0-dth_Wrist_Before.*m_Leg.*t4.*t9.*9.0-dth_Wrist_Before.*m_Leg.*t5.*t9.*9.0);
+            if nargout > 1
+                dth_Hip_After = (t26.*(dth_Hip_Before.*l_Leg.*t14+dth_Hip_Before.*l_Leg.*t15+dth_Hip_Before.*l_Leg.*t16+dth_Hip_Before.*l_Leg.*t17+dth_Hip_Before.*l_Leg.*t20+dl_Wrist_Bar_Before.*m_Body.*t3.*t4.*1.2e+1+dl_Wrist_Bar_Before.*m_Body.*t3.*t5.*3.6e+1+dl_Wrist_Bar_Before.*m_Leg.*t3.*t4.*3.6e+1+dl_Wrist_Bar_Before.*m_Leg.*t3.*t5.*3.6e+1-dth_Hip_Before.*l_Body.*l_Leg.*l_Wrist_Bar.*m_Body.*2.4e+1-dth_Hip_Before.*l_Body.*l_Leg.*l_Wrist_Bar.*m_Leg.*3.0e+1+dl_Wrist_Bar_Before.*l_Body.*l_Leg.*m_Leg.*t11.*9.0-dl_Wrist_Bar_Before.*l_Body.*l_Wrist_Bar.*m_Body.*t3.*3.6e+1-dl_Wrist_Bar_Before.*l_Body.*l_Wrist_Bar.*m_Leg.*t3.*7.2e+1-dl_Wrist_Bar_Before.*l_Leg.*l_Wrist_Bar.*m_Leg.*t11.*9.0-dth_Hip_Before.*l_Leg.*m_Leg.*t4.*t9.*9.0-dth_Hip_Before.*l_Leg.*m_Leg.*t5.*t9.*9.0))./l_Leg;
+            end
+            if nargout > 2
+                I_F_Wrist_Bar = -(dl_Wrist_Bar_Before.*(m_Body.*t17+t4.*t6.*4.0+t4.*t7.*3.0+t5.*t6.*1.2e+1+t5.*t7.*3.0-l_Body.*l_Wrist_Bar.*t6.*1.2e+1-l_Body.*l_Wrist_Bar.*t7.*6.0+m_Body.*m_Leg.*t4.*1.3e+1-l_Body.*l_Wrist_Bar.*m_Body.*m_Leg.*2.7e+1-m_Body.*m_Leg.*t4.*t10.*6.0+l_Body.*l_Wrist_Bar.*m_Body.*m_Leg.*t10.*9.0))./(m_Body.*t4.*4.0+m_Body.*t5.*1.2e+1+m_Leg.*t4.*1.2e+1+m_Leg.*t5.*1.2e+1-l_Body.*l_Wrist_Bar.*m_Body.*1.2e+1-l_Body.*l_Wrist_Bar.*m_Leg.*2.4e+1-m_Leg.*t4.*t10.*9.0-m_Leg.*t5.*t10.*9.0+l_Body.*l_Wrist_Bar.*m_Leg.*t10.*1.8e+1);
+            end
+            
+            
+        end
+        
     end
-    
 
     % Callbacks that handle component events
     methods (Access = private)
 
         % Code that executes after component creation
         function startupFcn(app)
+            app.Initialize_Data_Array = [
+                app.xSlider.Value;
+                app.dxSlider.Value;
+                app.ySlider.Value;
+                app.dySlider.Value;
+                app.th_WristSlider.Value;
+                app.dth_WristSlider.Value;
+                app.th_HipSlider.Value;
+                app.dth_HipSlider.Value;
+                ];
+            
             initialize_Data(app)
             
             app.quiver_Ratio = 4;
@@ -1445,6 +1531,18 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             hold(app.UIAxes, "on")
             scatter(app.UIAxes, 0,0,[],"black","filled")
             hold(app.UIAxes, "off")
+            
+            pause(1)
+            app.slider_Positions = [
+                app.xSlider.Position;
+                app.dxSlider.Position;
+                app.ySlider.Position;
+                app.dySlider.Position;
+                app.th_WristSlider.Position;
+                app.dth_WristSlider.Position;
+                app.th_HipSlider.Position;
+                app.dth_HipSlider.Position;
+                ];
         end
 
         % Value changed function: PlayingButton
@@ -1510,7 +1608,32 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
         % Button pushed function: Take_OffButton
         function Take_OffButtonPushed(app, event)
-            app.status = 'Inair';
+            app.StatusLabel.Text = 'InAir';
+        end
+
+        % Value changing function: xSlider
+        function Initialization_Slider_Changing(app, event)
+            changingValue = event.Value;
+            if ~app.PlayingButton.Value
+                
+                target_Index = prod(event.Source.Position == app.slider_Positions, 2);
+                
+                app.Initialize_Data_Array(logical(target_Index)) = changingValue;
+                
+                initialize_Data(app)
+                refresh_Stick(app)
+                drawnow
+            end
+        end
+
+        % Selection changed function: Status_Buttons
+        function Initialize_Status_Changed(app, event)
+            %             selectedButton = app.Status_Buttons.SelectedObject;
+            if ~app.PlayingButton.Value
+                initialize_Data(app)
+                refresh_Stick(app)
+                drawnow
+            end
         end
     end
 
@@ -1522,62 +1645,224 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [400 200 1031 724];
+            app.UIFigure.Position = [400 100 1031 829];
             app.UIFigure.Name = 'MATLAB App';
 
-            % Create PlayingButton
-            app.PlayingButton = uibutton(app.UIFigure, 'state');
-            app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
-            app.PlayingButton.Text = 'Playing';
-            app.PlayingButton.Position = [482 230 70 22];
+            % Create GridLayout
+            app.GridLayout = uigridlayout(app.UIFigure);
+            app.GridLayout.ColumnWidth = {'1.5x', '4.41x', 137, '1.47x', '1.47x', '1.47x', '1.47x', '1.47x', '0.88x', '0.1x', '2x', '2.94x', '0.1x', '1x'};
+            app.GridLayout.RowHeight = {'7.5x', '0.5x', 30, '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.1x'};
+            app.GridLayout.ColumnSpacing = 1;
+            app.GridLayout.RowSpacing = 3;
+
+            % Create StatusLabel
+            app.StatusLabel = uilabel(app.GridLayout);
+            app.StatusLabel.HorizontalAlignment = 'center';
+            app.StatusLabel.FontSize = 30;
+            app.StatusLabel.Layout.Row = [6 8];
+            app.StatusLabel.Layout.Column = 3;
+            app.StatusLabel.Text = 'Status';
+
+            % Create DataInitializationPanel
+            app.DataInitializationPanel = uipanel(app.GridLayout);
+            app.DataInitializationPanel.TitlePosition = 'centertop';
+            app.DataInitializationPanel.Title = 'Data Initialization';
+            app.DataInitializationPanel.Layout.Row = [2 12];
+            app.DataInitializationPanel.Layout.Column = [10 13];
+            app.DataInitializationPanel.FontSize = 20;
+
+            % Create Take_OffButton
+            app.Take_OffButton = uibutton(app.GridLayout, 'push');
+            app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
+            app.Take_OffButton.Layout.Row = 5;
+            app.Take_OffButton.Layout.Column = 7;
+            app.Take_OffButton.Text = 'Take_Off';
+
+            % Create FrameButton
+            app.FrameButton = uibutton(app.GridLayout, 'push');
+            app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
+            app.FrameButton.Layout.Row = 7;
+            app.FrameButton.Layout.Column = 5;
+            app.FrameButton.Text = '1 Frame';
+
+            % Create ResetButton
+            app.ResetButton = uibutton(app.GridLayout, 'state');
+            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
+            app.ResetButton.Text = 'Reset';
+            app.ResetButton.Layout.Row = 7;
+            app.ResetButton.Layout.Column = 7;
 
             % Create Slider
-            app.Slider = uislider(app.UIFigure);
+            app.Slider = uislider(app.GridLayout);
             app.Slider.Limits = [-1 1];
             app.Slider.MajorTicks = [-1 -0.5 0 0.5 1];
             app.Slider.MajorTickLabels = {'-1', '-0.5', '0', '0.5', '1'};
             app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
             app.Slider.MinorTicks = [-1 -0.96 -0.92 -0.88 -0.84 -0.8 -0.76 -0.72 -0.68 -0.64 -0.6 -0.56 -0.52 -0.48 -0.44 -0.4 -0.36 -0.32 -0.28 -0.24 -0.2 -0.16 -0.12 -0.08 -0.04 0 0.04 0.0800000000000001 0.12 0.16 0.2 0.24 0.28 0.32 0.36 0.4 0.44 0.48 0.52 0.56 0.6 0.64 0.68 0.72 0.76 0.8 0.84 0.88 0.92 0.96 1];
-            app.Slider.Position = [404 77 226 3];
-
-            % Create ResetButton
-            app.ResetButton = uibutton(app.UIFigure, 'state');
-            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
-            app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [482 194 70 22];
-
-            % Create FrameButton
-            app.FrameButton = uibutton(app.UIFigure, 'push');
-            app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
-            app.FrameButton.Position = [482 158 70 22];
-            app.FrameButton.Text = '1 Frame';
-
-            % Create PlaySpeedxEditFieldLabel
-            app.PlaySpeedxEditFieldLabel = uilabel(app.UIFigure);
-            app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
-            app.PlaySpeedxEditFieldLabel.Position = [454 111 76 22];
-            app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
+            app.Slider.Layout.Row = [10 11];
+            app.Slider.Layout.Column = [4 8];
 
             % Create PlaySpeedxEditField
-            app.PlaySpeedxEditField = uieditfield(app.UIFigure, 'numeric');
+            app.PlaySpeedxEditField = uieditfield(app.GridLayout, 'numeric');
             app.PlaySpeedxEditField.Limits = [1e-06 Inf];
-            app.PlaySpeedxEditField.Position = [529 111 51 22];
+            app.PlaySpeedxEditField.Layout.Row = 9;
+            app.PlaySpeedxEditField.Layout.Column = 7;
             app.PlaySpeedxEditField.Value = 0.5;
 
-            % Create Take_OffButton
-            app.Take_OffButton = uibutton(app.UIFigure, 'push');
-            app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
-            app.Take_OffButton.Position = [566 230 100 22];
-            app.Take_OffButton.Text = 'Take_Off';
+            % Create PlaySpeedxEditFieldLabel
+            app.PlaySpeedxEditFieldLabel = uilabel(app.GridLayout);
+            app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
+            app.PlaySpeedxEditFieldLabel.Layout.Row = 9;
+            app.PlaySpeedxEditFieldLabel.Layout.Column = [5 6];
+            app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
+
+            % Create PlayingButton
+            app.PlayingButton = uibutton(app.GridLayout, 'state');
+            app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
+            app.PlayingButton.Text = 'Playing';
+            app.PlayingButton.Layout.Row = 5;
+            app.PlayingButton.Layout.Column = 5;
+
+            % Create xSliderLabel
+            app.xSliderLabel = uilabel(app.GridLayout);
+            app.xSliderLabel.HorizontalAlignment = 'center';
+            app.xSliderLabel.Layout.Row = 4;
+            app.xSliderLabel.Layout.Column = 11;
+            app.xSliderLabel.Text = 'x';
+
+            % Create xSlider
+            app.xSlider = uislider(app.GridLayout);
+            app.xSlider.Limits = [-1 1];
+            app.xSlider.MajorTicks = [];
+            app.xSlider.ValueChangingFcn = createCallbackFcn(app, @Initialization_Slider_Changing, true);
+            app.xSlider.Layout.Row = 4;
+            app.xSlider.Layout.Column = 12;
+
+            % Create dxSliderLabel
+            app.dxSliderLabel = uilabel(app.GridLayout);
+            app.dxSliderLabel.HorizontalAlignment = 'center';
+            app.dxSliderLabel.Layout.Row = 5;
+            app.dxSliderLabel.Layout.Column = 11;
+            app.dxSliderLabel.Text = 'dx';
+
+            % Create dxSlider
+            app.dxSlider = uislider(app.GridLayout);
+            app.dxSlider.Limits = [-2 2];
+            app.dxSlider.MajorTicks = [];
+            app.dxSlider.Layout.Row = 5;
+            app.dxSlider.Layout.Column = 12;
+
+            % Create ySliderLabel
+            app.ySliderLabel = uilabel(app.GridLayout);
+            app.ySliderLabel.HorizontalAlignment = 'center';
+            app.ySliderLabel.Layout.Row = 6;
+            app.ySliderLabel.Layout.Column = 11;
+            app.ySliderLabel.Text = 'y';
+
+            % Create ySlider
+            app.ySlider = uislider(app.GridLayout);
+            app.ySlider.Limits = [-1 1];
+            app.ySlider.MajorTicks = [];
+            app.ySlider.Layout.Row = 6;
+            app.ySlider.Layout.Column = 12;
+
+            % Create dySliderLabel
+            app.dySliderLabel = uilabel(app.GridLayout);
+            app.dySliderLabel.HorizontalAlignment = 'center';
+            app.dySliderLabel.Layout.Row = 7;
+            app.dySliderLabel.Layout.Column = 11;
+            app.dySliderLabel.Text = 'dy';
+
+            % Create dySlider
+            app.dySlider = uislider(app.GridLayout);
+            app.dySlider.Limits = [-2 2];
+            app.dySlider.MajorTicks = [];
+            app.dySlider.Layout.Row = 7;
+            app.dySlider.Layout.Column = 12;
+
+            % Create th_WristSliderLabel
+            app.th_WristSliderLabel = uilabel(app.GridLayout);
+            app.th_WristSliderLabel.HorizontalAlignment = 'center';
+            app.th_WristSliderLabel.Layout.Row = 8;
+            app.th_WristSliderLabel.Layout.Column = 11;
+            app.th_WristSliderLabel.Text = 'th_Wrist';
+
+            % Create th_WristSlider
+            app.th_WristSlider = uislider(app.GridLayout);
+            app.th_WristSlider.Limits = [-180 180];
+            app.th_WristSlider.MajorTicks = [];
+            app.th_WristSlider.Layout.Row = 8;
+            app.th_WristSlider.Layout.Column = 12;
+
+            % Create dth_WristSliderLabel
+            app.dth_WristSliderLabel = uilabel(app.GridLayout);
+            app.dth_WristSliderLabel.HorizontalAlignment = 'center';
+            app.dth_WristSliderLabel.Layout.Row = 9;
+            app.dth_WristSliderLabel.Layout.Column = 11;
+            app.dth_WristSliderLabel.Text = 'dth_Wrist';
+
+            % Create dth_WristSlider
+            app.dth_WristSlider = uislider(app.GridLayout);
+            app.dth_WristSlider.Limits = [-2 2];
+            app.dth_WristSlider.MajorTicks = [];
+            app.dth_WristSlider.Layout.Row = 9;
+            app.dth_WristSlider.Layout.Column = 12;
+
+            % Create th_HipSliderLabel
+            app.th_HipSliderLabel = uilabel(app.GridLayout);
+            app.th_HipSliderLabel.HorizontalAlignment = 'center';
+            app.th_HipSliderLabel.Layout.Row = 10;
+            app.th_HipSliderLabel.Layout.Column = 11;
+            app.th_HipSliderLabel.Text = 'th_Hip';
+
+            % Create th_HipSlider
+            app.th_HipSlider = uislider(app.GridLayout);
+            app.th_HipSlider.Limits = [-90 90];
+            app.th_HipSlider.MajorTicks = [];
+            app.th_HipSlider.Layout.Row = 10;
+            app.th_HipSlider.Layout.Column = 12;
+
+            % Create dth_HipSliderLabel
+            app.dth_HipSliderLabel = uilabel(app.GridLayout);
+            app.dth_HipSliderLabel.HorizontalAlignment = 'center';
+            app.dth_HipSliderLabel.Layout.Row = 11;
+            app.dth_HipSliderLabel.Layout.Column = 11;
+            app.dth_HipSliderLabel.Text = 'dth_Hip';
+
+            % Create dth_HipSlider
+            app.dth_HipSlider = uislider(app.GridLayout);
+            app.dth_HipSlider.Limits = [-2 2];
+            app.dth_HipSlider.MajorTicks = [];
+            app.dth_HipSlider.Layout.Row = 11;
+            app.dth_HipSlider.Layout.Column = 12;
+
+            % Create Status_Buttons
+            app.Status_Buttons = uibuttongroup(app.GridLayout);
+            app.Status_Buttons.SelectionChangedFcn = createCallbackFcn(app, @Initialize_Status_Changed, true);
+            app.Status_Buttons.BorderType = 'none';
+            app.Status_Buttons.Layout.Row = 3;
+            app.Status_Buttons.Layout.Column = [11 12];
+
+            % Create InAirButton
+            app.InAirButton = uitogglebutton(app.Status_Buttons);
+            app.InAirButton.Text = 'InAir';
+            app.InAirButton.Position = [13 6 82 22];
+
+            % Create OnBarButton
+            app.OnBarButton = uitogglebutton(app.Status_Buttons);
+            app.OnBarButton.Text = 'OnBar';
+            app.OnBarButton.Position = [117 6 69 22];
+            app.OnBarButton.Value = true;
 
             % Create UIAxes
-            app.UIAxes = uiaxes(app.UIFigure);
+            app.UIAxes = uiaxes(app.GridLayout);
             app.UIAxes.DataAspectRatio = [1 1 1];
             app.UIAxes.XLim = [0 2];
             app.UIAxes.XColor = 'none';
             app.UIAxes.YColor = 'none';
             app.UIAxes.FontSize = 12;
-            app.UIAxes.Position = [117 291 800 400];
+            app.UIAxes.Layout.Row = 1;
+            app.UIAxes.Layout.Column = [2 12];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
