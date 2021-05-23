@@ -362,3 +362,4 @@ f_X = dl_Wrist_Bar.*dth_Wrist.*m_Body.*t40.*2.0+dl_Wrist_Bar.*dth_Wrist.*m_Leg.*
 if nargout > 1
     f_Y = g.*m_Body+g.*m_Leg-dl_Wrist_Bar.*dth_Wrist.*m_Body.*t39.*2.0-dl_Wrist_Bar.*dth_Wrist.*m_Leg.*t39.*2.0-(l_Body.*m_Body.*t7.*t40)./2.0-l_Body.*m_Leg.*t7.*t40-(l_Leg.*m_Leg.*t6.*t46)./2.0-(l_Leg.*m_Leg.*t7.*t46)./2.0+l_Wrist_Bar.*m_Body.*t7.*t40+l_Wrist_Bar.*m_Leg.*t7.*t40-m_Leg.*t45.*t351.*t352-t21.*t45.*t351.*t354-dth_Hip.*dth_Wrist.*l_Leg.*m_Leg.*t46+m_Body.*t21.*t40.*t351.*t353+m_Leg.*t21.*t40.*t351.*t353-l_Body.*m_Body.*t21.*t39.*t351.*t352-l_Body.*m_Leg.*t21.*t39.*t351.*t352.*2.0+l_Wrist_Bar.*m_Body.*t21.*t39.*t351.*t352.*2.0+l_Wrist_Bar.*m_Leg.*t21.*t39.*t351.*t352.*2.0;
 end
+end

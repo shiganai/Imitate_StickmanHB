@@ -58,7 +58,6 @@ syms_Replacing = [
     th_Hip, dth_Hip, ddth_Hip, ...
     ];
 
-%{/
 laglange_Eqs = simplify(subs(laglange_Eqs, syms_Replaced, syms_Replacing));
 f_X = subs(f_X, syms_Replaced, syms_Replacing);
 f_Y = subs(f_Y, syms_Replaced, syms_Replacing);
@@ -77,7 +76,7 @@ toc
 ddth_Wrist_Eq = simplify(X(1));
 ddth_Hip_Eq = simplify(X(2));
 % matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'})
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar_Debbug.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'})
+% matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar_Debbug.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'})
 
 simplify(d_M(1) - f_X)
 simplify(d_M(2) - f_Y)
@@ -87,69 +86,7 @@ simplify(subs(f_Y, syms_Replacing, zeros(size(syms_Replacing))))
 f_X = subs(f_X, variables, X');
 f_Y = subs(f_Y, variables, X');
 
-matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Onbar.m', 'outputs', {'f_X', 'f_Y'})
-%}
-
-%{
-laglange_Eqs = subs(laglange_Eqs, syms_Replaced, syms_Replacing);
-
-parallel.defaultClusterProfile('local');
-c = parcluster();
-
-variables = [ddth_Wrist, ddth_Hip];
-
-[A, B] = equationsToMatrix(laglange_Eqs, variables);
-tic
-X = simplify(inv(A)*B);
-toc
-
-ddth_Wrist_Eq = X(1);
-ddth_Hip_Eq = X(2);
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar_Debbug.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'})
-%}
-
-%{
-laglange_Eqs = subs(laglange_Eqs, syms_Replaced, syms_Replacing);
-
-parallel.defaultClusterProfile('local');
-c = parcluster();
-
-variables = [ddth_Wrist, ddth_Hip];
-
-[A, B] = equationsToMatrix(laglange_Eqs, variables);
-tic
-X = simplify(inv(A)*B);
-toc
-
-ddth_Wrist_Eq = simplify(X(1));
-ddth_Hip_Eq = simplify(X(2));
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar_Debbug2.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'})
-%}
-
-%{
-laglange_Eqs = simplify(subs(laglange_Eqs, syms_Replaced, syms_Replacing));
-
-parallel.defaultClusterProfile('local');
-c = parcluster();
-
-variables = [ddth_Wrist, ddth_Hip];
-
-[A, B] = equationsToMatrix(laglange_Eqs, variables);
-tic
-X = simplify(inv(A)*B);
-toc
-
-ddth_Wrist_Eq = X(1);
-ddth_Hip_Eq = X(2);
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar_Debbug3.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'})
-%}
-
-%{
-job = createJob(c);
-createTask(job, @matlabFunction, 1,{ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Onbar_Debbug.m', 'outputs', {'ddth_Wrist', 'ddth_Hip'}});
-submit(job)
-job.Tasks
-%}
+% matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Onbar.m', 'outputs', {'f_X', 'f_Y'})
 
 
 
