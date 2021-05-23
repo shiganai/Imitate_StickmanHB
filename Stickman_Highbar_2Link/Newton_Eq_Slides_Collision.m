@@ -47,10 +47,9 @@ N_Wrist_Bar = subs(N_Wrist_Bar, limitaion_Replaced, limitaion_Replacing);
 f_X = subs(f_X, limitaion_Replaced, limitaion_Replacing);
 f_Y = subs(f_Y, limitaion_Replaced, limitaion_Replacing);
 
+syms f_Wrist_Bar real
 syms tau_Hip real
 syms myu real
-
-f_Wrist_Bar = N_Wrist_Bar * myu;
 
 laglange_Eqs = [
     -functionalDerivative(L, l_Wrist_Bar_Pre) == f_Wrist_Bar;
@@ -78,7 +77,6 @@ laglange_Eqs = simplify(subs(laglange_Eqs, syms_Replaced, syms_Replacing));
 d_M = simplify(subs(d_M, syms_Replaced, syms_Replacing));
 v_G = simplify(subs(v_G, syms_Replaced, syms_Replacing));
 N_Wrist_Bar = subs(N_Wrist_Bar, syms_Replaced, syms_Replacing);
-f_Wrist_Bar = subs(f_Wrist_Bar, syms_Replaced, syms_Replacing);
 f_X = subs(f_X, syms_Replaced, syms_Replacing);
 f_Y = subs(f_Y, syms_Replaced, syms_Replacing);
 
@@ -99,21 +97,63 @@ ddth_Hip_Eq = simplify(X(3));
 f_X = subs(f_X, variables, X');
 f_Y = subs(f_Y, variables, X');
 N_Wrist_Bar = subs(N_Wrist_Bar, variables, X');
-f_Wrist_Bar = subs(f_Wrist_Bar, variables, X');
 
 simplify(f_Wrist_Bar - (f_X * sin(th_Wrist) + f_Y * -cos(th_Wrist)))
 simplify(N_Wrist_Bar - (f_X * cos(th_Wrist) + f_Y * sin(th_Wrist)))
 
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddl_Wrist_Bar_Eq, formula(f_Wrist_Bar), 'file', 'find_dd_Catch.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddl_Wrist_Bar', 'f_Wrist_Bar'})
+% matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddl_Wrist_Bar_Eq, formula(f_Wrist_Bar), 'file', 'find_dd_Catch.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddl_Wrist_Bar', 'f_Wrist_Bar'})
 % matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Catch.m', 'outputs', {'f_X', 'f_Y'})
 
 simplify(subs(d_M, variables, X') - [f_X, f_Y])
 
+syms dl_Wrist_Bar_After dl_Wrist_Bar_Before real
+syms dth_Wrist_After dth_Wrist_Before real
+syms dth_Hip_After dth_Hip_Before real
+syms I_F_Wrist_Bar real
 
+impulsive_Force = [f_Wrist_Bar];
+impulsive_Force_Zero = sym(zeros(size(impulsive_Force)));
+impulsive_Force_Replacing = [I_F_Wrist_Bar];
 
+assuming_Variable = [dl_Wrist_Bar_After];
+assuming_Variable_Replacing = sym(zeros(size(assuming_Variable)));
 
+equations = [
+    dl_Wrist_Bar_After - dl_Wrist_Bar_Before == simplify(ddl_Wrist_Bar_Eq - subs(ddl_Wrist_Bar_Eq, impulsive_Force, impulsive_Force_Zero));
+    dth_Wrist_After - dth_Wrist_Before == simplify(ddth_Wrist_Eq - subs(ddth_Wrist_Eq, impulsive_Force, impulsive_Force_Zero));
+    dth_Hip_After - dth_Hip_Before == simplify(ddth_Hip_Eq - subs(ddth_Hip_Eq, impulsive_Force, impulsive_Force_Zero));
+    ];
 
+equations = subs(equations, impulsive_Force, impulsive_Force_Replacing);
+equations = subs(equations, assuming_Variable, assuming_Variable_Replacing);
 
+variables = [dth_Wrist_After, dth_Hip_After, I_F_Wrist_Bar];
+
+[A, B] = equationsToMatrix(equations, variables);
+X = simplify(inv(A)*B);
+
+dth_Wrist_After_Eq = simplify(X(1));
+dth_Hip_After_Eq = simplify(X(2));
+I_F_Wrist_Bar_Eq = simplify(X(3));
+
+impulsive_Force_Replacing_Eq = [I_F_Wrist_Bar_Eq];
+
+v_G_Delta = subs(v_G, [dth_Wrist, dth_Hip, dl_Wrist_Bar], [dth_Wrist_After_Eq, dth_Hip_After_Eq, 0]) ...
+    - subs(v_G, [dth_Wrist, dth_Hip, dl_Wrist_Bar], [dth_Wrist_Before, dth_Hip_Before, dl_Wrist_Bar_Before]);
+I_G_Delta = v_G_Delta * (m_Body + m_Leg);
+
+I_N_Wrist_Bar = simplify(subs(N_Wrist_Bar - subs(N_Wrist_Bar, impulsive_Force, impulsive_Force_Zero), impulsive_Force, impulsive_Force_Replacing_Eq));
+I_F_X = simplify(subs(f_X - subs(f_X, impulsive_Force, impulsive_Force_Zero), impulsive_Force, impulsive_Force_Replacing_Eq));
+I_F_Y = simplify(subs(f_Y - subs(f_Y, impulsive_Force, impulsive_Force_Zero), impulsive_Force, impulsive_Force_Replacing_Eq));
+
+I_F_X_Manual = I_N_Wrist_Bar*cos(th_Wrist) + I_F_Wrist_Bar_Eq*sin(th_Wrist);
+I_F_Y_Manual = I_N_Wrist_Bar*sin(th_Wrist) - I_F_Wrist_Bar_Eq*cos(th_Wrist);
+
+simplify([I_F_X, I_F_Y] - I_G_Delta)
+simplify(I_F_X - I_F_X_Manual)
+simplify(I_F_Y - I_F_Y_Manual)
+
+matlabFunction(dth_Wrist_After_Eq, dth_Hip_After_Eq, I_F_Wrist_Bar_Eq, 'file', 'find_Status_After_Slides_Collision.m', 'outputs', {'dth_Wrist_After', 'dth_Hip_After', 'I_F_Wrist_Bar'})
 
 
 

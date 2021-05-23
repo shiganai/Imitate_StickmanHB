@@ -78,14 +78,7 @@ ddy_Wrist_Eq = simplify(X(2));
 ddth_Wrist_Eq = simplify(X(3));
 ddth_Hip_Eq = simplify(X(4));
 
-% matlabFunction(ddx_Wrist_Eq, ddy_Wrist_Eq, ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddx', 'ddy', 'ddth_Wrist', 'ddth_Hip'})
-
-%{
-job = createJob(c);
-createTask(job, @matlabFunction, 1,{ddx_Wrist_Eq, ddy_Wrist_Eq, ddth_Wrist_Eq, ddth_Hip_Eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddx', 'ddy', 'ddth_Wrist', 'ddth_Hip'}});
-submit(job)
-job.Tasks
-%}
+matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddx_Wrist_Eq, ddy_Wrist_Eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddx', 'ddy'})
 
 simplify(subs(d_K, variables, X'))
 

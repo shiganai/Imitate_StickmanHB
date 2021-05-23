@@ -41,3 +41,4 @@ if nargout > 1
     t33 = 1.0./t32;
     ddth_Hip = -t16.*t33.*(l_Leg.*2.0+l_Body.*t2.*3.0-l_Wrist_Bar.*t2.*3.0).*(g.*l_Body.*m_Body.*t4.*3.0+g.*l_Body.*m_Leg.*t4.*6.0+g.*l_Leg.*m_Leg.*t15.*3.0-g.*l_Wrist_Bar.*m_Body.*t4.*6.0-g.*l_Wrist_Bar.*m_Leg.*t4.*6.0+l_Body.*l_Leg.*m_Leg.*t3.*t6.*3.0-l_Leg.*l_Wrist_Bar.*m_Leg.*t3.*t6.*3.0+dth_Hip.*dth_Wrist.*l_Body.*l_Leg.*m_Leg.*t3.*6.0-dth_Hip.*dth_Wrist.*l_Leg.*l_Wrist_Bar.*m_Leg.*t3.*6.0)+(t33.*(tau_Hip.*1.2e+1+g.*l_Leg.*m_Leg.*t15.*6.0-l_Body.*l_Leg.*m_Leg.*t3.*t7.*6.0+l_Leg.*l_Wrist_Bar.*m_Leg.*t3.*t7.*6.0).*(m_Body.*t8+m_Body.*t10.*3.0+m_Leg.*t8.*3.0+m_Leg.*t9+m_Leg.*t10.*3.0-l_Body.*l_Wrist_Bar.*m_Body.*3.0-l_Body.*l_Wrist_Bar.*m_Leg.*6.0+l_Body.*l_Leg.*m_Leg.*t2.*3.0-l_Leg.*l_Wrist_Bar.*m_Leg.*t2.*3.0))./(m_Leg.*t9);
 end
+end
