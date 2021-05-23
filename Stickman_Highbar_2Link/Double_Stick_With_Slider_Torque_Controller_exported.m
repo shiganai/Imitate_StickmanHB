@@ -2,36 +2,38 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                  matlab.ui.Figure
-        PlayingButton             matlab.ui.control.StateButton
-        Slider                    matlab.ui.control.Slider
-        ResetButton               matlab.ui.control.StateButton
-        FrameButton               matlab.ui.control.Button
-        PlaySpeedxEditFieldLabel  matlab.ui.control.Label
-        PlaySpeedxEditField       matlab.ui.control.NumericEditField
-        Take_OffButton            matlab.ui.control.Button
-        InitializationPanel       matlab.ui.container.Panel
-        Status_Buttons            matlab.ui.container.ButtonGroup
-        OnBarButton               matlab.ui.control.ToggleButton
-        InAirButton               matlab.ui.control.ToggleButton
-        xGSliderLabel             matlab.ui.control.Label
-        xGSlider                  matlab.ui.control.Slider
-        dxGSliderLabel            matlab.ui.control.Label
-        dxGSlider                 matlab.ui.control.Slider
-        yGSliderLabel             matlab.ui.control.Label
-        yGSlider                  matlab.ui.control.Slider
-        dyGSliderLabel            matlab.ui.control.Label
-        dyGSlider                 matlab.ui.control.Slider
-        WLabel                    matlab.ui.control.Label
-        th_WristSlider            matlab.ui.control.Slider
-        WLabel_2                  matlab.ui.control.Label
-        dth_WristSlider           matlab.ui.control.Slider
-        HLabel                    matlab.ui.control.Label
-        th_HipSlider              matlab.ui.control.Slider
-        HLabel_2                  matlab.ui.control.Label
-        dth_HipSlider             matlab.ui.control.Slider
-        StatusLabel               matlab.ui.control.Label
-        UIAxes                    matlab.ui.control.UIAxes
+        UIFigure                   matlab.ui.Figure
+        PlayingButton              matlab.ui.control.StateButton
+        Slider                     matlab.ui.control.Slider
+        ResetButton                matlab.ui.control.StateButton
+        FrameButton                matlab.ui.control.Button
+        PlaySpeedxEditFieldLabel   matlab.ui.control.Label
+        PlaySpeedxEditField        matlab.ui.control.NumericEditField
+        Take_OffButton             matlab.ui.control.Button
+        InitializationPanel        matlab.ui.container.Panel
+        Status_Buttons             matlab.ui.container.ButtonGroup
+        OnBarButton                matlab.ui.control.ToggleButton
+        InAirButton                matlab.ui.control.ToggleButton
+        xGSliderLabel              matlab.ui.control.Label
+        xGSlider                   matlab.ui.control.Slider
+        dxGSliderLabel             matlab.ui.control.Label
+        dxGSlider                  matlab.ui.control.Slider
+        yGSliderLabel              matlab.ui.control.Label
+        yGSlider                   matlab.ui.control.Slider
+        dyGSliderLabel             matlab.ui.control.Label
+        dyGSlider                  matlab.ui.control.Slider
+        WLabel                     matlab.ui.control.Label
+        th_WristSlider             matlab.ui.control.Slider
+        WLabel_2                   matlab.ui.control.Label
+        dth_WristSlider            matlab.ui.control.Slider
+        HLabel                     matlab.ui.control.Label
+        th_HipSlider               matlab.ui.control.Slider
+        HLabel_2                   matlab.ui.control.Label
+        dth_HipSlider              matlab.ui.control.Slider
+        StatusLabel                matlab.ui.control.Label
+        AngularMomentumGaugeLabel  matlab.ui.control.Label
+        AngularMomentumGauge       matlab.ui.control.SemicircularGauge
+        UIAxes                     matlab.ui.control.UIAxes
     end
 
     
@@ -40,8 +42,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         l_Leg = 1
         m_Body = 2
         m_Leg = 2
-        g = 1
+        g = 10
         myu = 0.5
+        r_Head = 0.12
         
         l_Wrist_Bar double
         dl_Wrist_Bar double
@@ -68,6 +71,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         
         stick_Body matlab.graphics.chart.primitive.Line
         stick_Leg matlab.graphics.chart.primitive.Line
+        head matlab.graphics.primitive.Rectangle
         
         quivers matlab.graphics.chart.primitive.Quiver
         quiver_Ratio double
@@ -93,7 +97,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         theta_PE_0_Flex = 0 % 正
         theta_PE_1_Flex = 150 % 正
         
-        c = 1e1
+        c = 1e2
     end
     
     methods (Access = private)
@@ -180,6 +184,9 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             x2 = x1 + app.l_Leg * cos(app.th_Wrist + 1/2 * pi + app.th_Hip);
             y2 = y1 + app.l_Leg * sin(app.th_Wrist + 1/2 * pi + app.th_Hip);
             
+            x_Head = x0 + 2/5 * app.l_Body * cos(app.th_Wrist + 1/2 * pi) + 1.2 * app.r_Head * cos(app.th_Wrist);
+            y_Head = y0 + 2/5 * app.l_Body * sin(app.th_Wrist + 1/2 * pi) + 1.2 * app.r_Head * sin(app.th_Wrist);
+            
             app.stick_Body.XData(1) = x0;
             app.stick_Body.YData(1) = y0;
             app.stick_Body.XData(2) = x1;
@@ -189,6 +196,16 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.stick_Leg.YData(1) = y1;
             app.stick_Leg.XData(2) = x2;
             app.stick_Leg.YData(2) = y2;
+            
+            app.head.Position(1) = x_Head - app.r_Head;
+            app.head.Position(2) = y_Head - app.r_Head;
+            
+            if isequal(app.StatusLabel.Text, 'InAir')
+            else
+                ang_M = find_Ang_M(app.dth_Hip,app.dth_Wrist,app.l_Body,app.l_Leg,app.m_Body,app.m_Leg,app.th_Hip);
+                
+                app.AngularMomentumGauge.Value = ang_M;
+            end
         end
         
         function refresh_Quivers(app)
@@ -214,16 +231,18 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
         function run_Ode(app)
-            if isequal(app.StatusLabel.Text, 'OnBar')
-                run_Ode_Onbar(app)
-            elseif isequal(app.StatusLabel.Text, 'InAir')
-                run_Ode_Inair(app)
-            elseif isequal(app.StatusLabel.Text, 'Catch')
-                run_Ode_Catch(app)
-            elseif isequal(app.StatusLabel.Text, 'Failed')
+            if isequal(app.StatusLabel.Text, 'Failed')
                 initialize_Data(app)
             else
-                error('The status has not been determined')
+                if isequal(app.StatusLabel.Text, 'OnBar')
+                    run_Ode_Onbar(app)
+                elseif isequal(app.StatusLabel.Text, 'InAir')
+                    run_Ode_Inair(app)
+                elseif isequal(app.StatusLabel.Text, 'Catch')
+                    run_Ode_Catch(app)
+                else
+                    error('The status has not been determined')
+                end
             end
         end
         
@@ -1522,6 +1541,14 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             
         end
         
+        function ang_M = find_Ang_M(dth_Hip,dth_Wrist,l_Body,l_Leg,m_Body,m_Leg,th_Hip)
+            t2 = cos(th_Hip);
+            t3 = l_Body.^2;
+            t4 = l_Leg.^2;
+            t5 = m_Leg.^2;
+            ang_M = (dth_Wrist.*m_Body.^2.*t3+dth_Hip.*t4.*t5+dth_Wrist.*t4.*t5+dth_Hip.*m_Body.*m_Leg.*t4.*4.0+dth_Wrist.*m_Body.*m_Leg.*t3.*4.0+dth_Wrist.*m_Body.*m_Leg.*t4.*4.0+dth_Hip.*l_Body.*l_Leg.*m_Body.*m_Leg.*t2.*3.0+dth_Wrist.*l_Body.*l_Leg.*m_Body.*m_Leg.*t2.*6.0)./(m_Body.*1.2e+1+m_Leg.*1.2e+1);
+        end
+        
     end
     
 
@@ -1551,19 +1578,23 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             hold(app.UIAxes, "on")
             app.stick_Leg = plot(app.UIAxes, [0, 1], [0, 1], '-', 'LineWidth', 3);
             hold(app.UIAxes, "off")
-            refresh_Stick(app)
             
-            xlim(app.UIAxes, [-(app.l_Body + app.l_Leg), (app.l_Body + app.l_Leg) * 3])
-            ylim(app.UIAxes, [-(app.l_Body + app.l_Leg), (app.l_Body + app.l_Leg) * 1])
+            app.head = rectangle(app.UIAxes, 'Position', [0,0, app.r_Head * 2, app.r_Head * 2], 'Curvature', [1 1]);
+            
+            
+            xlim(app.UIAxes, [-(app.l_Body + app.l_Leg), (app.l_Body + app.l_Leg) * 3] * 1.5)
+            ylim(app.UIAxes, [-(app.l_Body + app.l_Leg), (app.l_Body + app.l_Leg) * 1] * 1.5)
             
             hold(app.UIAxes, "on")
             app.quivers(1,1) = quiver(app.UIAxes, 0, 0, 1, 1);
             hold(app.UIAxes, "off")
-            refresh_Quivers(app)
             
             hold(app.UIAxes, "on")
             scatter(app.UIAxes, 0,0,[],"black","filled")
             hold(app.UIAxes, "off")
+            
+            refresh_Stick(app)
+            refresh_Quivers(app)
             
             app.slider_Positions = [
                 app.xGSlider.Position;
@@ -1704,45 +1735,42 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.PlayingButton = uibutton(app.UIFigure, 'state');
             app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
             app.PlayingButton.Text = 'Playing';
-            app.PlayingButton.Position = [482 237 70 22];
+            app.PlayingButton.Position = [424 167 70 22];
 
             % Create Slider
             app.Slider = uislider(app.UIFigure);
-            app.Slider.Limits = [-1 1];
-            app.Slider.MajorTicks = [-1 -0.5 0 0.5 1];
-            app.Slider.MajorTickLabels = {'-1', '-0.5', '0', '0.5', '1'};
+            app.Slider.Limits = [-10 10];
             app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
-            app.Slider.MinorTicks = [-1 -0.96 -0.92 -0.88 -0.84 -0.8 -0.76 -0.72 -0.68 -0.64 -0.6 -0.56 -0.52 -0.48 -0.44 -0.4 -0.36 -0.32 -0.28 -0.24 -0.2 -0.16 -0.12 -0.08 -0.04 0 0.04 0.0800000000000001 0.12 0.16 0.2 0.24 0.28 0.32 0.36 0.4 0.44 0.48 0.52 0.56 0.6 0.64 0.68 0.72 0.76 0.8 0.84 0.88 0.92 0.96 1];
             app.Slider.Position = [404 84 226 3];
 
             % Create ResetButton
             app.ResetButton = uibutton(app.UIFigure, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [482 201 70 22];
+            app.ResetButton.Position = [424 116 70 22];
 
             % Create FrameButton
             app.FrameButton = uibutton(app.UIFigure, 'push');
             app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
-            app.FrameButton.Position = [482 165 70 22];
+            app.FrameButton.Position = [540 167 70 22];
             app.FrameButton.Text = '1 Frame';
 
             % Create PlaySpeedxEditFieldLabel
             app.PlaySpeedxEditFieldLabel = uilabel(app.UIFigure);
             app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
-            app.PlaySpeedxEditFieldLabel.Position = [454 118 76 22];
+            app.PlaySpeedxEditFieldLabel.Position = [454 206 76 22];
             app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
 
             % Create PlaySpeedxEditField
             app.PlaySpeedxEditField = uieditfield(app.UIFigure, 'numeric');
             app.PlaySpeedxEditField.Limits = [1e-06 Inf];
-            app.PlaySpeedxEditField.Position = [529 118 51 22];
+            app.PlaySpeedxEditField.Position = [529 206 51 22];
             app.PlaySpeedxEditField.Value = 0.5;
 
             % Create Take_OffButton
             app.Take_OffButton = uibutton(app.UIFigure, 'push');
             app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
-            app.Take_OffButton.Position = [566 237 100 22];
+            app.Take_OffButton.Position = [540 116 70 22];
             app.Take_OffButton.Text = 'Take_Off';
 
             % Create InitializationPanel
@@ -1855,7 +1883,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create th_HipSlider
             app.th_HipSlider = uislider(app.InitializationPanel);
-            app.th_HipSlider.Limits = [-90 90];
+            app.th_HipSlider.Limits = [-90 150];
             app.th_HipSlider.MajorTicks = [];
             app.th_HipSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
             app.th_HipSlider.Position = [47 40 150 3];
@@ -1877,8 +1905,21 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.StatusLabel = uilabel(app.UIFigure);
             app.StatusLabel.HorizontalAlignment = 'center';
             app.StatusLabel.FontSize = 30;
-            app.StatusLabel.Position = [274 150 91 36];
+            app.StatusLabel.Position = [245 94 91 36];
             app.StatusLabel.Text = 'Status';
+
+            % Create AngularMomentumGaugeLabel
+            app.AngularMomentumGaugeLabel = uilabel(app.UIFigure);
+            app.AngularMomentumGaugeLabel.HorizontalAlignment = 'center';
+            app.AngularMomentumGaugeLabel.FontSize = 20;
+            app.AngularMomentumGaugeLabel.Position = [201 165 180 24];
+            app.AngularMomentumGaugeLabel.Text = 'Angular Momentum';
+
+            % Create AngularMomentumGauge
+            app.AngularMomentumGauge = uigauge(app.UIFigure, 'semicircular');
+            app.AngularMomentumGauge.Limits = [-10 10];
+            app.AngularMomentumGauge.MajorTicks = [-10 -5 0 5 10];
+            app.AngularMomentumGauge.Position = [230 204 120 65];
 
             % Create UIAxes
             app.UIAxes = uiaxes(app.UIFigure);

@@ -30,6 +30,11 @@ L = T - U;
 K = (m_Body + m_Leg) * v_G;
 d_K = diff(K);
 
+ang_M_Center_Segments = formula(m_Body * cross([p_Body - p_G, 0], [v_Body - v_G, 0]) + m_Leg * cross([p_Leg - p_G, 0], [v_Leg - v_G, 0]));
+ang_M_Center_Segments = ang_M_Center_Segments(3);
+ang_M = ang_M_Center_Segments + (1/12 * m_Body * l_Body^2) * diff(th_Wrist_Pre) + (1/12 * m_Leg * l_Leg^2) * diff(th_Wrist_Pre + th_Hip_Pre);
+dang_M = diff(ang_M);
+
 syms f_Wrist_Bar real
 syms tau_Hip
 
@@ -61,6 +66,10 @@ syms_Replacing = [
 
 laglange_Eqs = simplify(subs(laglange_Eqs, syms_Replaced, syms_Replacing));
 d_K = simplify(subs(d_K, syms_Replaced, syms_Replacing));
+ang_M = simplify(subs(ang_M, syms_Replaced, syms_Replacing));
+dang_M = simplify(subs(dang_M, syms_Replaced, syms_Replacing));
+
+matlabFunction(formula(ang_M), 'file', 'find_Ang_M.m', 'outputs', {'ang_M'})
 
 
 parallel.defaultClusterProfile('local');
@@ -78,9 +87,10 @@ ddy_Wrist_Eq = simplify(X(2));
 ddth_Wrist_Eq = simplify(X(3));
 ddth_Hip_Eq = simplify(X(4));
 
-matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddx_Wrist_Eq, ddy_Wrist_Eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddx', 'ddy'})
+% matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddx_Wrist_Eq, ddy_Wrist_Eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddx', 'ddy'})
 
 simplify(subs(d_K, variables, X'))
+simplify(subs(dang_M, variables, X'))
 
 
 
