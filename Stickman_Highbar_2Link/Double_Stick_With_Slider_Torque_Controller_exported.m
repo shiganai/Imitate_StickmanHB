@@ -3,17 +3,18 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                  matlab.ui.Figure
-        GridLayout                matlab.ui.container.GridLayout
-        StatusLabel               matlab.ui.control.Label
-        DataInitializationPanel   matlab.ui.container.Panel
-        Take_OffButton            matlab.ui.control.Button
-        FrameButton               matlab.ui.control.Button
-        ResetButton               matlab.ui.control.StateButton
-        Slider                    matlab.ui.control.Slider
-        PlaySpeedxEditField       matlab.ui.control.NumericEditField
-        PlaySpeedxEditFieldLabel  matlab.ui.control.Label
         PlayingButton             matlab.ui.control.StateButton
-        xSliderLabel              matlab.ui.control.Label
+        Slider                    matlab.ui.control.Slider
+        ResetButton               matlab.ui.control.StateButton
+        FrameButton               matlab.ui.control.Button
+        PlaySpeedxEditFieldLabel  matlab.ui.control.Label
+        PlaySpeedxEditField       matlab.ui.control.NumericEditField
+        Take_OffButton            matlab.ui.control.Button
+        InitializationPanel       matlab.ui.container.Panel
+        Status_Buttons            matlab.ui.container.ButtonGroup
+        OnBarButton               matlab.ui.control.ToggleButton
+        InAirButton               matlab.ui.control.ToggleButton
+        xLabel                    matlab.ui.control.Label
         xSlider                   matlab.ui.control.Slider
         dxSliderLabel             matlab.ui.control.Label
         dxSlider                  matlab.ui.control.Slider
@@ -21,17 +22,15 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         ySlider                   matlab.ui.control.Slider
         dySliderLabel             matlab.ui.control.Label
         dySlider                  matlab.ui.control.Slider
-        th_WristSliderLabel       matlab.ui.control.Label
+        WLabel                    matlab.ui.control.Label
         th_WristSlider            matlab.ui.control.Slider
-        dth_WristSliderLabel      matlab.ui.control.Label
+        WLabel_2                  matlab.ui.control.Label
         dth_WristSlider           matlab.ui.control.Slider
-        th_HipSliderLabel         matlab.ui.control.Label
+        HLabel                    matlab.ui.control.Label
         th_HipSlider              matlab.ui.control.Slider
-        dth_HipSliderLabel        matlab.ui.control.Label
+        HLabel_2                  matlab.ui.control.Label
         dth_HipSlider             matlab.ui.control.Slider
-        Status_Buttons            matlab.ui.container.ButtonGroup
-        InAirButton               matlab.ui.control.ToggleButton
-        OnBarButton               matlab.ui.control.ToggleButton
+        StatusLabel               matlab.ui.control.Label
         UIAxes                    matlab.ui.control.UIAxes
     end
 
@@ -1492,12 +1491,14 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         end
         
     end
+    
 
     % Callbacks that handle component events
     methods (Access = private)
 
         % Code that executes after component creation
         function startupFcn(app)
+            
             app.Initialize_Data_Array = [
                 app.xSlider.Value;
                 app.dxSlider.Value;
@@ -1532,7 +1533,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             scatter(app.UIAxes, 0,0,[],"black","filled")
             hold(app.UIAxes, "off")
             
-            pause(1)
             app.slider_Positions = [
                 app.xSlider.Position;
                 app.dxSlider.Position;
@@ -1608,11 +1608,11 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
         % Button pushed function: Take_OffButton
         function Take_OffButtonPushed(app, event)
-            app.StatusLabel.Text = 'InAir';
+            app.status = 'Inair';
         end
 
         % Value changing function: xSlider
-        function Initialization_Slider_Changing(app, event)
+        function Initialize_Data_SliderValueChanging(app, event)
             changingValue = event.Value;
             if ~app.PlayingButton.Value
                 
@@ -1620,16 +1620,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                 
                 app.Initialize_Data_Array(logical(target_Index)) = changingValue;
                 
-                initialize_Data(app)
-                refresh_Stick(app)
-                drawnow
-            end
-        end
-
-        % Selection changed function: Status_Buttons
-        function Initialize_Status_Changed(app, event)
-            %             selectedButton = app.Status_Buttons.SelectedObject;
-            if ~app.PlayingButton.Value
                 initialize_Data(app)
                 refresh_Stick(app)
                 drawnow
@@ -1645,224 +1635,189 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [400 100 1031 829];
+            app.UIFigure.Position = [400 200 1031 731];
             app.UIFigure.Name = 'MATLAB App';
 
-            % Create GridLayout
-            app.GridLayout = uigridlayout(app.UIFigure);
-            app.GridLayout.ColumnWidth = {'1.5x', '4.41x', 137, '1.47x', '1.47x', '1.47x', '1.47x', '1.47x', '0.88x', '0.1x', '2x', '2.94x', '0.1x', '1x'};
-            app.GridLayout.RowHeight = {'7.5x', '0.5x', 30, '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.4x', '0.1x'};
-            app.GridLayout.ColumnSpacing = 1;
-            app.GridLayout.RowSpacing = 3;
-
-            % Create StatusLabel
-            app.StatusLabel = uilabel(app.GridLayout);
-            app.StatusLabel.HorizontalAlignment = 'center';
-            app.StatusLabel.FontSize = 30;
-            app.StatusLabel.Layout.Row = [6 8];
-            app.StatusLabel.Layout.Column = 3;
-            app.StatusLabel.Text = 'Status';
-
-            % Create DataInitializationPanel
-            app.DataInitializationPanel = uipanel(app.GridLayout);
-            app.DataInitializationPanel.TitlePosition = 'centertop';
-            app.DataInitializationPanel.Title = 'Data Initialization';
-            app.DataInitializationPanel.Layout.Row = [2 12];
-            app.DataInitializationPanel.Layout.Column = [10 13];
-            app.DataInitializationPanel.FontSize = 20;
-
-            % Create Take_OffButton
-            app.Take_OffButton = uibutton(app.GridLayout, 'push');
-            app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
-            app.Take_OffButton.Layout.Row = 5;
-            app.Take_OffButton.Layout.Column = 7;
-            app.Take_OffButton.Text = 'Take_Off';
-
-            % Create FrameButton
-            app.FrameButton = uibutton(app.GridLayout, 'push');
-            app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
-            app.FrameButton.Layout.Row = 7;
-            app.FrameButton.Layout.Column = 5;
-            app.FrameButton.Text = '1 Frame';
-
-            % Create ResetButton
-            app.ResetButton = uibutton(app.GridLayout, 'state');
-            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
-            app.ResetButton.Text = 'Reset';
-            app.ResetButton.Layout.Row = 7;
-            app.ResetButton.Layout.Column = 7;
+            % Create PlayingButton
+            app.PlayingButton = uibutton(app.UIFigure, 'state');
+            app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
+            app.PlayingButton.Text = 'Playing';
+            app.PlayingButton.Position = [482 237 70 22];
 
             % Create Slider
-            app.Slider = uislider(app.GridLayout);
+            app.Slider = uislider(app.UIFigure);
             app.Slider.Limits = [-1 1];
             app.Slider.MajorTicks = [-1 -0.5 0 0.5 1];
             app.Slider.MajorTickLabels = {'-1', '-0.5', '0', '0.5', '1'};
             app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
             app.Slider.MinorTicks = [-1 -0.96 -0.92 -0.88 -0.84 -0.8 -0.76 -0.72 -0.68 -0.64 -0.6 -0.56 -0.52 -0.48 -0.44 -0.4 -0.36 -0.32 -0.28 -0.24 -0.2 -0.16 -0.12 -0.08 -0.04 0 0.04 0.0800000000000001 0.12 0.16 0.2 0.24 0.28 0.32 0.36 0.4 0.44 0.48 0.52 0.56 0.6 0.64 0.68 0.72 0.76 0.8 0.84 0.88 0.92 0.96 1];
-            app.Slider.Layout.Row = [10 11];
-            app.Slider.Layout.Column = [4 8];
+            app.Slider.Position = [404 84 226 3];
 
-            % Create PlaySpeedxEditField
-            app.PlaySpeedxEditField = uieditfield(app.GridLayout, 'numeric');
-            app.PlaySpeedxEditField.Limits = [1e-06 Inf];
-            app.PlaySpeedxEditField.Layout.Row = 9;
-            app.PlaySpeedxEditField.Layout.Column = 7;
-            app.PlaySpeedxEditField.Value = 0.5;
+            % Create ResetButton
+            app.ResetButton = uibutton(app.UIFigure, 'state');
+            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
+            app.ResetButton.Text = 'Reset';
+            app.ResetButton.Position = [482 201 70 22];
+
+            % Create FrameButton
+            app.FrameButton = uibutton(app.UIFigure, 'push');
+            app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
+            app.FrameButton.Position = [482 165 70 22];
+            app.FrameButton.Text = '1 Frame';
 
             % Create PlaySpeedxEditFieldLabel
-            app.PlaySpeedxEditFieldLabel = uilabel(app.GridLayout);
+            app.PlaySpeedxEditFieldLabel = uilabel(app.UIFigure);
             app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
-            app.PlaySpeedxEditFieldLabel.Layout.Row = 9;
-            app.PlaySpeedxEditFieldLabel.Layout.Column = [5 6];
+            app.PlaySpeedxEditFieldLabel.Position = [454 118 76 22];
             app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
 
-            % Create PlayingButton
-            app.PlayingButton = uibutton(app.GridLayout, 'state');
-            app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
-            app.PlayingButton.Text = 'Playing';
-            app.PlayingButton.Layout.Row = 5;
-            app.PlayingButton.Layout.Column = 5;
+            % Create PlaySpeedxEditField
+            app.PlaySpeedxEditField = uieditfield(app.UIFigure, 'numeric');
+            app.PlaySpeedxEditField.Limits = [1e-06 Inf];
+            app.PlaySpeedxEditField.Position = [529 118 51 22];
+            app.PlaySpeedxEditField.Value = 0.5;
 
-            % Create xSliderLabel
-            app.xSliderLabel = uilabel(app.GridLayout);
-            app.xSliderLabel.HorizontalAlignment = 'center';
-            app.xSliderLabel.Layout.Row = 4;
-            app.xSliderLabel.Layout.Column = 11;
-            app.xSliderLabel.Text = 'x';
+            % Create Take_OffButton
+            app.Take_OffButton = uibutton(app.UIFigure, 'push');
+            app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
+            app.Take_OffButton.Position = [566 237 100 22];
+            app.Take_OffButton.Text = 'Take_Off';
 
-            % Create xSlider
-            app.xSlider = uislider(app.GridLayout);
-            app.xSlider.Limits = [-1 1];
-            app.xSlider.MajorTicks = [];
-            app.xSlider.ValueChangingFcn = createCallbackFcn(app, @Initialization_Slider_Changing, true);
-            app.xSlider.Layout.Row = 4;
-            app.xSlider.Layout.Column = 12;
-
-            % Create dxSliderLabel
-            app.dxSliderLabel = uilabel(app.GridLayout);
-            app.dxSliderLabel.HorizontalAlignment = 'center';
-            app.dxSliderLabel.Layout.Row = 5;
-            app.dxSliderLabel.Layout.Column = 11;
-            app.dxSliderLabel.Text = 'dx';
-
-            % Create dxSlider
-            app.dxSlider = uislider(app.GridLayout);
-            app.dxSlider.Limits = [-2 2];
-            app.dxSlider.MajorTicks = [];
-            app.dxSlider.Layout.Row = 5;
-            app.dxSlider.Layout.Column = 12;
-
-            % Create ySliderLabel
-            app.ySliderLabel = uilabel(app.GridLayout);
-            app.ySliderLabel.HorizontalAlignment = 'center';
-            app.ySliderLabel.Layout.Row = 6;
-            app.ySliderLabel.Layout.Column = 11;
-            app.ySliderLabel.Text = 'y';
-
-            % Create ySlider
-            app.ySlider = uislider(app.GridLayout);
-            app.ySlider.Limits = [-1 1];
-            app.ySlider.MajorTicks = [];
-            app.ySlider.Layout.Row = 6;
-            app.ySlider.Layout.Column = 12;
-
-            % Create dySliderLabel
-            app.dySliderLabel = uilabel(app.GridLayout);
-            app.dySliderLabel.HorizontalAlignment = 'center';
-            app.dySliderLabel.Layout.Row = 7;
-            app.dySliderLabel.Layout.Column = 11;
-            app.dySliderLabel.Text = 'dy';
-
-            % Create dySlider
-            app.dySlider = uislider(app.GridLayout);
-            app.dySlider.Limits = [-2 2];
-            app.dySlider.MajorTicks = [];
-            app.dySlider.Layout.Row = 7;
-            app.dySlider.Layout.Column = 12;
-
-            % Create th_WristSliderLabel
-            app.th_WristSliderLabel = uilabel(app.GridLayout);
-            app.th_WristSliderLabel.HorizontalAlignment = 'center';
-            app.th_WristSliderLabel.Layout.Row = 8;
-            app.th_WristSliderLabel.Layout.Column = 11;
-            app.th_WristSliderLabel.Text = 'th_Wrist';
-
-            % Create th_WristSlider
-            app.th_WristSlider = uislider(app.GridLayout);
-            app.th_WristSlider.Limits = [-180 180];
-            app.th_WristSlider.MajorTicks = [];
-            app.th_WristSlider.Layout.Row = 8;
-            app.th_WristSlider.Layout.Column = 12;
-
-            % Create dth_WristSliderLabel
-            app.dth_WristSliderLabel = uilabel(app.GridLayout);
-            app.dth_WristSliderLabel.HorizontalAlignment = 'center';
-            app.dth_WristSliderLabel.Layout.Row = 9;
-            app.dth_WristSliderLabel.Layout.Column = 11;
-            app.dth_WristSliderLabel.Text = 'dth_Wrist';
-
-            % Create dth_WristSlider
-            app.dth_WristSlider = uislider(app.GridLayout);
-            app.dth_WristSlider.Limits = [-2 2];
-            app.dth_WristSlider.MajorTicks = [];
-            app.dth_WristSlider.Layout.Row = 9;
-            app.dth_WristSlider.Layout.Column = 12;
-
-            % Create th_HipSliderLabel
-            app.th_HipSliderLabel = uilabel(app.GridLayout);
-            app.th_HipSliderLabel.HorizontalAlignment = 'center';
-            app.th_HipSliderLabel.Layout.Row = 10;
-            app.th_HipSliderLabel.Layout.Column = 11;
-            app.th_HipSliderLabel.Text = 'th_Hip';
-
-            % Create th_HipSlider
-            app.th_HipSlider = uislider(app.GridLayout);
-            app.th_HipSlider.Limits = [-90 90];
-            app.th_HipSlider.MajorTicks = [];
-            app.th_HipSlider.Layout.Row = 10;
-            app.th_HipSlider.Layout.Column = 12;
-
-            % Create dth_HipSliderLabel
-            app.dth_HipSliderLabel = uilabel(app.GridLayout);
-            app.dth_HipSliderLabel.HorizontalAlignment = 'center';
-            app.dth_HipSliderLabel.Layout.Row = 11;
-            app.dth_HipSliderLabel.Layout.Column = 11;
-            app.dth_HipSliderLabel.Text = 'dth_Hip';
-
-            % Create dth_HipSlider
-            app.dth_HipSlider = uislider(app.GridLayout);
-            app.dth_HipSlider.Limits = [-2 2];
-            app.dth_HipSlider.MajorTicks = [];
-            app.dth_HipSlider.Layout.Row = 11;
-            app.dth_HipSlider.Layout.Column = 12;
+            % Create InitializationPanel
+            app.InitializationPanel = uipanel(app.UIFigure);
+            app.InitializationPanel.TitlePosition = 'centertop';
+            app.InitializationPanel.Title = 'Initialization';
+            app.InitializationPanel.FontSize = 20;
+            app.InitializationPanel.Position = [722 19 211 280];
 
             % Create Status_Buttons
-            app.Status_Buttons = uibuttongroup(app.GridLayout);
-            app.Status_Buttons.SelectionChangedFcn = createCallbackFcn(app, @Initialize_Status_Changed, true);
+            app.Status_Buttons = uibuttongroup(app.InitializationPanel);
             app.Status_Buttons.BorderType = 'none';
-            app.Status_Buttons.Layout.Row = 3;
-            app.Status_Buttons.Layout.Column = [11 12];
-
-            % Create InAirButton
-            app.InAirButton = uitogglebutton(app.Status_Buttons);
-            app.InAirButton.Text = 'InAir';
-            app.InAirButton.Position = [13 6 82 22];
+            app.Status_Buttons.Position = [10 194 187 44];
 
             % Create OnBarButton
             app.OnBarButton = uitogglebutton(app.Status_Buttons);
             app.OnBarButton.Text = 'OnBar';
-            app.OnBarButton.Position = [117 6 69 22];
+            app.OnBarButton.Position = [1 11 86 22];
             app.OnBarButton.Value = true;
 
+            % Create InAirButton
+            app.InAirButton = uitogglebutton(app.Status_Buttons);
+            app.InAirButton.Text = 'InAir';
+            app.InAirButton.Position = [100 11 86 22];
+
+            % Create xLabel
+            app.xLabel = uilabel(app.InitializationPanel);
+            app.xLabel.HorizontalAlignment = 'right';
+            app.xLabel.Position = [1 169 25 22];
+            app.xLabel.Text = 'x';
+
+            % Create xSlider
+            app.xSlider = uislider(app.InitializationPanel);
+            app.xSlider.Limits = [-1 1];
+            app.xSlider.MajorTicks = [];
+            app.xSlider.ValueChangingFcn = createCallbackFcn(app, @Initialize_Data_SliderValueChanging, true);
+            app.xSlider.Position = [47 178 150 3];
+
+            % Create dxSliderLabel
+            app.dxSliderLabel = uilabel(app.InitializationPanel);
+            app.dxSliderLabel.HorizontalAlignment = 'right';
+            app.dxSliderLabel.Position = [1 146 25 22];
+            app.dxSliderLabel.Text = 'dx';
+
+            % Create dxSlider
+            app.dxSlider = uislider(app.InitializationPanel);
+            app.dxSlider.Limits = [-1 1];
+            app.dxSlider.MajorTicks = [];
+            app.dxSlider.Position = [47 155 150 3];
+
+            % Create ySliderLabel
+            app.ySliderLabel = uilabel(app.InitializationPanel);
+            app.ySliderLabel.HorizontalAlignment = 'right';
+            app.ySliderLabel.Position = [1 123 25 22];
+            app.ySliderLabel.Text = 'y';
+
+            % Create ySlider
+            app.ySlider = uislider(app.InitializationPanel);
+            app.ySlider.Limits = [-1 1];
+            app.ySlider.MajorTicks = [];
+            app.ySlider.Position = [47 132 150 3];
+
+            % Create dySliderLabel
+            app.dySliderLabel = uilabel(app.InitializationPanel);
+            app.dySliderLabel.HorizontalAlignment = 'right';
+            app.dySliderLabel.Position = [1 100 25 22];
+            app.dySliderLabel.Text = 'dy';
+
+            % Create dySlider
+            app.dySlider = uislider(app.InitializationPanel);
+            app.dySlider.Limits = [-1 1];
+            app.dySlider.MajorTicks = [];
+            app.dySlider.Position = [47 109 150 3];
+
+            % Create WLabel
+            app.WLabel = uilabel(app.InitializationPanel);
+            app.WLabel.HorizontalAlignment = 'right';
+            app.WLabel.Position = [1 77 25 22];
+            app.WLabel.Text = 'θW';
+
+            % Create th_WristSlider
+            app.th_WristSlider = uislider(app.InitializationPanel);
+            app.th_WristSlider.Limits = [-1 1];
+            app.th_WristSlider.MajorTicks = [];
+            app.th_WristSlider.Position = [47 86 150 3];
+
+            % Create WLabel_2
+            app.WLabel_2 = uilabel(app.InitializationPanel);
+            app.WLabel_2.HorizontalAlignment = 'right';
+            app.WLabel_2.Position = [0 54 26 22];
+            app.WLabel_2.Text = 'ωW';
+
+            % Create dth_WristSlider
+            app.dth_WristSlider = uislider(app.InitializationPanel);
+            app.dth_WristSlider.Limits = [-1 1];
+            app.dth_WristSlider.MajorTicks = [];
+            app.dth_WristSlider.Position = [47 63 150 3];
+
+            % Create HLabel
+            app.HLabel = uilabel(app.InitializationPanel);
+            app.HLabel.HorizontalAlignment = 'right';
+            app.HLabel.Position = [1 31 25 22];
+            app.HLabel.Text = 'θH';
+
+            % Create th_HipSlider
+            app.th_HipSlider = uislider(app.InitializationPanel);
+            app.th_HipSlider.Limits = [-1 1];
+            app.th_HipSlider.MajorTicks = [];
+            app.th_HipSlider.Position = [47 40 150 3];
+
+            % Create HLabel_2
+            app.HLabel_2 = uilabel(app.InitializationPanel);
+            app.HLabel_2.HorizontalAlignment = 'right';
+            app.HLabel_2.Position = [1 7 25 22];
+            app.HLabel_2.Text = 'ωH';
+
+            % Create dth_HipSlider
+            app.dth_HipSlider = uislider(app.InitializationPanel);
+            app.dth_HipSlider.Limits = [-1 1];
+            app.dth_HipSlider.MajorTicks = [];
+            app.dth_HipSlider.Position = [47 16 150 3];
+
+            % Create StatusLabel
+            app.StatusLabel = uilabel(app.UIFigure);
+            app.StatusLabel.HorizontalAlignment = 'center';
+            app.StatusLabel.FontSize = 30;
+            app.StatusLabel.Position = [274 150 91 36];
+            app.StatusLabel.Text = 'Status';
+
             % Create UIAxes
-            app.UIAxes = uiaxes(app.GridLayout);
+            app.UIAxes = uiaxes(app.UIFigure);
             app.UIAxes.DataAspectRatio = [1 1 1];
             app.UIAxes.XLim = [0 2];
             app.UIAxes.XColor = 'none';
             app.UIAxes.YColor = 'none';
             app.UIAxes.FontSize = 12;
-            app.UIAxes.Layout.Row = 1;
-            app.UIAxes.Layout.Column = [2 12];
+            app.UIAxes.Position = [117 298 800 400];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
