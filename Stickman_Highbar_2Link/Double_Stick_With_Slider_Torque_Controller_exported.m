@@ -3,13 +3,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                   matlab.ui.Figure
-        PlayingButton              matlab.ui.control.StateButton
-        Slider                     matlab.ui.control.Slider
-        ResetButton                matlab.ui.control.StateButton
-        FrameButton                matlab.ui.control.Button
-        PlaySpeedxEditFieldLabel   matlab.ui.control.Label
-        PlaySpeedxEditField        matlab.ui.control.NumericEditField
-        Take_OffButton             matlab.ui.control.Button
         InitializationPanel        matlab.ui.container.Panel
         Status_Buttons             matlab.ui.container.ButtonGroup
         OnBarButton                matlab.ui.control.ToggleButton
@@ -33,6 +26,17 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
         StatusLabel                matlab.ui.control.Label
         AngularMomentumGaugeLabel  matlab.ui.control.Label
         AngularMomentumGauge       matlab.ui.control.SemicircularGauge
+        ControlPanel               matlab.ui.container.Panel
+        PlayingButton              matlab.ui.control.StateButton
+        ResetButton                matlab.ui.control.StateButton
+        FrameButton                matlab.ui.control.Button
+        Take_OffButton             matlab.ui.control.Button
+        Slider                     matlab.ui.control.Slider
+        ConfigPanel                matlab.ui.container.Panel
+        PlaySpeedxEditFieldLabel   matlab.ui.control.Label
+        PlaySpeedxEditField        matlab.ui.control.NumericEditField
+        RefreshstepEditFieldLabel  matlab.ui.control.Label
+        RefreshstepEditField       matlab.ui.control.NumericEditField
         UIAxes                     matlab.ui.control.UIAxes
     end
 
@@ -387,7 +391,7 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                     app.dth_Wrist = dth_Wrist_After;
                     app.dth_Hip = dth_Hip_After;
                 elseif ie(end) == 2
-                    app.StatusLabel.Text = 'failed';
+                    app.StatusLabel.Text = 'Failed';
                     
                     app.PlayingButton.Value = false;
                 end
@@ -1569,6 +1573,8 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                 app.dth_HipSlider.Value;
                 ];
             
+            app.time_step = app.RefreshstepEditField.Value;
+            
             initialize_Data(app)
             
             app.quiver_Ratio = 4;
@@ -1718,6 +1724,11 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
                 app.dyGSlider.Visible = 'off';
             end
         end
+
+        % Value changed function: RefreshstepEditField
+        function RefreshstepEditFieldValueChanged(app, event)
+            app.time_step = app.RefreshstepEditField.Value;
+        end
     end
 
     % Component initialization
@@ -1730,48 +1741,6 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Position = [400 100 1031 731];
             app.UIFigure.Name = 'MATLAB App';
-
-            % Create PlayingButton
-            app.PlayingButton = uibutton(app.UIFigure, 'state');
-            app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
-            app.PlayingButton.Text = 'Playing';
-            app.PlayingButton.Position = [424 167 70 22];
-
-            % Create Slider
-            app.Slider = uislider(app.UIFigure);
-            app.Slider.Limits = [-10 10];
-            app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
-            app.Slider.Position = [404 84 226 3];
-
-            % Create ResetButton
-            app.ResetButton = uibutton(app.UIFigure, 'state');
-            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
-            app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [424 116 70 22];
-
-            % Create FrameButton
-            app.FrameButton = uibutton(app.UIFigure, 'push');
-            app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
-            app.FrameButton.Position = [540 167 70 22];
-            app.FrameButton.Text = '1 Frame';
-
-            % Create PlaySpeedxEditFieldLabel
-            app.PlaySpeedxEditFieldLabel = uilabel(app.UIFigure);
-            app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
-            app.PlaySpeedxEditFieldLabel.Position = [454 206 76 22];
-            app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
-
-            % Create PlaySpeedxEditField
-            app.PlaySpeedxEditField = uieditfield(app.UIFigure, 'numeric');
-            app.PlaySpeedxEditField.Limits = [1e-06 Inf];
-            app.PlaySpeedxEditField.Position = [529 206 51 22];
-            app.PlaySpeedxEditField.Value = 0.5;
-
-            % Create Take_OffButton
-            app.Take_OffButton = uibutton(app.UIFigure, 'push');
-            app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
-            app.Take_OffButton.Position = [540 116 70 22];
-            app.Take_OffButton.Text = 'Take_Off';
 
             % Create InitializationPanel
             app.InitializationPanel = uipanel(app.UIFigure);
@@ -1905,21 +1874,90 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
             app.StatusLabel = uilabel(app.UIFigure);
             app.StatusLabel.HorizontalAlignment = 'center';
             app.StatusLabel.FontSize = 30;
-            app.StatusLabel.Position = [245 94 91 36];
+            app.StatusLabel.Position = [244 134 91 36];
             app.StatusLabel.Text = 'Status';
 
             % Create AngularMomentumGaugeLabel
             app.AngularMomentumGaugeLabel = uilabel(app.UIFigure);
             app.AngularMomentumGaugeLabel.HorizontalAlignment = 'center';
             app.AngularMomentumGaugeLabel.FontSize = 20;
-            app.AngularMomentumGaugeLabel.Position = [201 165 180 24];
+            app.AngularMomentumGaugeLabel.Position = [200 204 180 24];
             app.AngularMomentumGaugeLabel.Text = 'Angular Momentum';
 
             % Create AngularMomentumGauge
             app.AngularMomentumGauge = uigauge(app.UIFigure, 'semicircular');
             app.AngularMomentumGauge.Limits = [-10 10];
             app.AngularMomentumGauge.MajorTicks = [-10 -5 0 5 10];
-            app.AngularMomentumGauge.Position = [230 204 120 65];
+            app.AngularMomentumGauge.Position = [229 243 120 65];
+
+            % Create ControlPanel
+            app.ControlPanel = uipanel(app.UIFigure);
+            app.ControlPanel.TitlePosition = 'centertop';
+            app.ControlPanel.Title = 'Control';
+            app.ControlPanel.FontSize = 20;
+            app.ControlPanel.Position = [387 66 260 221];
+
+            % Create PlayingButton
+            app.PlayingButton = uibutton(app.ControlPanel, 'state');
+            app.PlayingButton.ValueChangedFcn = createCallbackFcn(app, @PlayingButtonValueChanged, true);
+            app.PlayingButton.Text = 'Playing';
+            app.PlayingButton.Position = [37 150 70 22];
+
+            % Create ResetButton
+            app.ResetButton = uibutton(app.ControlPanel, 'state');
+            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
+            app.ResetButton.Text = 'Reset';
+            app.ResetButton.Position = [37 99 70 22];
+
+            % Create FrameButton
+            app.FrameButton = uibutton(app.ControlPanel, 'push');
+            app.FrameButton.ButtonPushedFcn = createCallbackFcn(app, @FrameButtonPushed, true);
+            app.FrameButton.Position = [153 150 70 22];
+            app.FrameButton.Text = '1 Frame';
+
+            % Create Take_OffButton
+            app.Take_OffButton = uibutton(app.ControlPanel, 'push');
+            app.Take_OffButton.ButtonPushedFcn = createCallbackFcn(app, @Take_OffButtonPushed, true);
+            app.Take_OffButton.Position = [153 99 70 22];
+            app.Take_OffButton.Text = 'Take_Off';
+
+            % Create Slider
+            app.Slider = uislider(app.ControlPanel);
+            app.Slider.Limits = [-10 10];
+            app.Slider.ValueChangingFcn = createCallbackFcn(app, @SliderValueChanging, true);
+            app.Slider.Position = [17 55 226 3];
+
+            % Create ConfigPanel
+            app.ConfigPanel = uipanel(app.UIFigure);
+            app.ConfigPanel.TitlePosition = 'centertop';
+            app.ConfigPanel.Title = 'Config';
+            app.ConfigPanel.FontSize = 20;
+            app.ConfigPanel.Position = [41 65 145 122];
+
+            % Create PlaySpeedxEditFieldLabel
+            app.PlaySpeedxEditFieldLabel = uilabel(app.ConfigPanel);
+            app.PlaySpeedxEditFieldLabel.HorizontalAlignment = 'right';
+            app.PlaySpeedxEditFieldLabel.Position = [11 49 76 22];
+            app.PlaySpeedxEditFieldLabel.Text = 'Play Speed x';
+
+            % Create PlaySpeedxEditField
+            app.PlaySpeedxEditField = uieditfield(app.ConfigPanel, 'numeric');
+            app.PlaySpeedxEditField.Limits = [1e-06 Inf];
+            app.PlaySpeedxEditField.Position = [86 49 51 22];
+            app.PlaySpeedxEditField.Value = 0.5;
+
+            % Create RefreshstepEditFieldLabel
+            app.RefreshstepEditFieldLabel = uilabel(app.ConfigPanel);
+            app.RefreshstepEditFieldLabel.HorizontalAlignment = 'right';
+            app.RefreshstepEditFieldLabel.Position = [15 8 73 22];
+            app.RefreshstepEditFieldLabel.Text = 'Refresh step';
+
+            % Create RefreshstepEditField
+            app.RefreshstepEditField = uieditfield(app.ConfigPanel, 'numeric');
+            app.RefreshstepEditField.Limits = [1e-06 Inf];
+            app.RefreshstepEditField.ValueChangedFcn = createCallbackFcn(app, @RefreshstepEditFieldValueChanged, true);
+            app.RefreshstepEditField.Position = [87 8 51 22];
+            app.RefreshstepEditField.Value = 0.01;
 
             % Create UIAxes
             app.UIAxes = uiaxes(app.UIFigure);
