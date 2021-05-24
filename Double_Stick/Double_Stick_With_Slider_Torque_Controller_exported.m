@@ -35,10 +35,10 @@ classdef Double_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
     methods (Access = private)
         
         function initialize_Data(app)
-            app.th1 = 2/2 * pi;
+            app.th1 = 0/2 * pi;
             app.dth1 = 0;
             
-            app.th2 = 2/2 * pi;
+            app.th2 = 0/2 * pi;
             app.dth2 = 0;
         end
         
