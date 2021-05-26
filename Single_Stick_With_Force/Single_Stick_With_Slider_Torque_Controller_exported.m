@@ -11,22 +11,22 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
     
     properties (Access = private)
-        Lc double
-        M double
-        g double
-        time_step double
+        Lc = 1
+        M = 1
+        g = 1
+        time_step = 0.05
         stick matlab.graphics.chart.primitive.Line
         theta_0 double
         dtheta_0 double
-        Mtheta double
+        Mtheta = 0
         quivers matlab.graphics.chart.primitive.Quiver
-        quiver_Ratio double
+        quiver_Ratio = 2
     end
     
     methods (Access = private)
         function initialize_Data(app)
             app.dtheta_0 = 0;
-            app.theta_0 = 0/2 * pi;
+            app.theta_0 = 1/2 * pi;
         end
         
         function refresh_Stick(app)
@@ -60,14 +60,7 @@ classdef Single_Stick_With_Slider_Torque_Controller_exported < matlab.apps.AppBa
 
         % Code that executes after component creation
         function startupFcn(app)
-            app.Lc = 1;
-            app.M = 1;
-            app.g = 0;
-            app.time_step = 0.05;
-            app.dtheta_0 = 0;
-            app.theta_0 = 0/2 * pi;
-            app.Mtheta = 0;
-            app.quiver_Ratio = 2;
+            initialize_Data(app)
             
             app.stick = plot(app.UIAxes, [0, app.Lc * cos(app.theta_0 + 3/2 * pi)], [0, app.Lc * sin(app.theta_0 + 3/2 * pi)], '-', 'LineWidth', 2);
             xlim(app.UIAxes, [-app.Lc, app.Lc])
