@@ -69,12 +69,13 @@ d_K = simplify(subs(d_K, syms_Replaced, syms_Replacing));
 ang_M = simplify(subs(ang_M, syms_Replaced, syms_Replacing));
 dang_M = simplify(subs(dang_M, syms_Replaced, syms_Replacing));
 
-matlabFunction(formula(ang_M), 'file', 'find_Ang_M.m', 'outputs', {'ang_M'})
+% matlabFunction(formula(ang_M), 'file', 'find_Ang_M.m', 'outputs', {'ang_M'})
 
 
 parallel.defaultClusterProfile('local');
 c = parcluster();
 
+%{
 variables = [ddx, ddy, ddth_Wrist, ddth_Hip];
 
 [A, B] = equationsToMatrix(laglange_Eqs, variables);
@@ -88,9 +89,27 @@ ddth_Wrist_Eq = simplify(X(3));
 ddth_Hip_Eq = simplify(X(4));
 
 % matlabFunction(ddth_Wrist_Eq, ddth_Hip_Eq, ddx_Wrist_Eq, ddy_Wrist_Eq, 'file', 'find_dd_Inair.m', 'outputs', {'ddth_Wrist', 'ddth_Hip', 'ddx', 'ddy'})
+%}
+
+%{/
+variables = [ddx, ddy, ddth_Wrist, tau_Hip];
+
+[A, B] = equationsToMatrix(laglange_Eqs, variables);
+tic
+X = simplify(inv(A)*B);
+toc
+
+ddx_Wrist_Eq = simplify(X(1));
+ddy_Wrist_Eq = simplify(X(2));
+ddth_Wrist_Eq = simplify(X(3));
+tau_Hip_Eq = simplify(X(4));
+
+matlabFunction(tau_Hip_Eq, 'file', 'find_Tau_Hip_Inair.m', 'outputs', {'tau_Hip'})
 
 simplify(subs(d_K, variables, X'))
 simplify(subs(dang_M, variables, X'))
+%}
+
 
 
 

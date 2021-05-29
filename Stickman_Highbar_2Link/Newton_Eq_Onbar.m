@@ -66,6 +66,7 @@ d_M = subs(d_M, syms_Replaced, syms_Replacing);
 parallel.defaultClusterProfile('local');
 c = parcluster();
 
+%{
 variables = [ddth_Wrist, ddth_Hip];
 
 [A, B] = equationsToMatrix(laglange_Eqs, variables);
@@ -87,7 +88,27 @@ f_X = subs(f_X, variables, X');
 f_Y = subs(f_Y, variables, X');
 
 % matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Onbar.m', 'outputs', {'f_X', 'f_Y'})
+%}
 
+variables = [ddth_Wrist, tau_Hip];
+
+[A, B] = equationsToMatrix(laglange_Eqs, variables);
+tic
+X = simplify(inv(A)*B);
+toc
+    
+ddth_Wrist_Eq = simplify(X(1));
+tau_Hip_Eq = simplify(X(2));
+
+matlabFunction(tau_Hip_Eq, 'file', 'find_Tau_Hip_Onbar.m', 'outputs', {'tau_Hip'})
+
+simplify(d_M(1) - f_X)
+simplify(d_M(2) - f_Y)
+simplify(subs(f_X, syms_Replacing, zeros(size(syms_Replacing))))
+simplify(subs(f_Y, syms_Replacing, zeros(size(syms_Replacing))))
+
+f_X = subs(f_X, variables, X');
+f_Y = subs(f_Y, variables, X');
 
 
 

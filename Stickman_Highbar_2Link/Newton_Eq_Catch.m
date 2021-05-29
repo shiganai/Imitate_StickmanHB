@@ -85,6 +85,7 @@ f_Y = subs(f_Y, syms_Replaced, syms_Replacing);
 parallel.defaultClusterProfile('local');
 c = parcluster();
 
+%{
 variables = [ddl_Wrist_Bar, ddth_Wrist, ddth_Hip];
 
 [A, B] = equationsToMatrix(laglange_Eqs, variables);
@@ -108,6 +109,32 @@ simplify(N_Wrist_Bar - (f_X * cos(th_Wrist) + f_Y * sin(th_Wrist)))
 % matlabFunction(formula(f_X), formula(f_Y), 'file', 'find_F_Catch.m', 'outputs', {'f_X', 'f_Y'})
 
 simplify(subs(d_M, variables, X') - [f_X, f_Y])
+%}
+
+
+variables = [ddl_Wrist_Bar, ddth_Wrist, tau_Hip];
+
+[A, B] = equationsToMatrix(laglange_Eqs, variables);
+tic
+X = simplify(inv(A)*B);
+toc
+
+ddl_Wrist_Bar_Eq = simplify(X(1));
+ddth_Wrist_Eq = simplify(X(2));
+tau_Hip_Eq = simplify(X(3));
+
+f_X = subs(f_X, variables, X');
+f_Y = subs(f_Y, variables, X');
+N_Wrist_Bar = subs(N_Wrist_Bar, variables, X');
+f_Wrist_Bar = subs(f_Wrist_Bar, variables, X');
+
+simplify(f_Wrist_Bar - (f_X * sin(th_Wrist) + f_Y * -cos(th_Wrist)))
+simplify(N_Wrist_Bar - (f_X * cos(th_Wrist) + f_Y * sin(th_Wrist)))
+
+matlabFunction(tau_Hip_Eq, 'file', 'find_Tau_Hip_Catch.m', 'outputs', {'tau_Hip'})
+
+simplify(subs(d_M, variables, X') - [f_X, f_Y])
+
 
 
 
