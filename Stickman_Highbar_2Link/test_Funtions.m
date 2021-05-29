@@ -19,3 +19,5 @@ th_Wrist = 0;
 f_Wrist_Bar = find_F_Wrist_Bar(ddl_Wrist_Bar,ddth_Hip,ddth_Wrist,dth_Hip,dth_Wrist,g,l_Body,l_Leg,l_Wrist_Bar,m_Body,m_Leg,th_Hip,th_Wrist)
 [f_X,f_Y] = find_F_Catch(dl_Wrist_Bar,dth_Hip,dth_Wrist,f_Wrist_Bar,g,l_Body,l_Leg,l_Wrist_Bar,m_Body,m_Leg,tau_Hip,th_Hip,th_Wrist)
 [f_X,f_Y] = find_F_Onbar(dth_Hip,dth_Wrist,g,l_Body,l_Leg,l_Wrist_Bar,m_Body,m_Leg,tau_Hip,th_Hip,th_Wrist)
+
+[ddth_Wrist,ddth_Hip] = find_dd_Onbar(dth_Hip,dth_Wrist,g,l_Body,l_Leg,l_Wrist_Bar,m_Body,m_Leg,tau_Hip,th_Hip,th_Wrist)
